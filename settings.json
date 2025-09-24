@@ -1,5 +1,8 @@
 {
   "input": "",
   "output": "",
-  "dark": false
+  "dark": false,
+  "lang": "zh",
+  "recent": [],
+  "template": "{name}_{start}-{end}.pdf"
 }

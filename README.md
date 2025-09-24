@@ -6,11 +6,18 @@ PDF 工具箱（拆分 / 合并 / 预览）
 - 拆成单页（每页生成一个 PDF）
 - 预览拆分结果（显示将生成几个文件、每个文件的页码范围与页数）
 - 合并多个 PDF 到一个 PDF
+- 拖拽导入输入文件（可选安装 tkinterdnd2）
+- 最近文件菜单（记忆最近 8 个）
+- 多语言切换（中文/英文）、快捷键支持
+- 合并管理器（可拖拽排序）
+- 分段导出命名模板（自定义文件名格式）
 
 运行方式
 方式一：直接运行 Python 脚本
 1) 安装依赖：
    pip install PyPDF2
+   # 可选（启用拖拽输入）
+   pip install tkinterdnd2
 2) 运行 GUI：
    python split_pdf_gui.py
 3）打包
@@ -36,6 +43,17 @@ PDF 工具箱（拆分 / 合并 / 预览）
 
 4. 合并 PDF
 - 选择多个 PDF 文件，合并为一个 PDF 输出
+ - 使用“合并管理器”可添加/移除/上移/下移/拖拽排序，点击“确定合并”开始
+
+5. 拖拽、最近文件、多语言、快捷键
+- 可把 PDF 直接拖进“输入 PDF 文件”输入框（需安装 tkinterdnd2）
+- 顶部“最近”菜单展示最近 8 个 PDF
+- 语言切换：工具栏右侧语言按钮（中文/EN）
+- 快捷键：
+  - Ctrl+P：预览拆分
+  - Ctrl+Enter：按范围拆分
+  - Ctrl+M：打开合并管理器
+  - Ctrl+L / Ctrl+D：切换浅色/深色主题
 
 使用步骤（GUI）
 1) 选择“输入 PDF 文件”
@@ -68,3 +86,52 @@ PDF 工具箱（拆分 / 合并 / 预览）
 - 修复“按范围拆分”原来只输出一个合并文件的问题：现在多段范围将生成多个文件，单段范围保持沿用原单文件导出行为
 - 新增“预览拆分结果”与“合并 PDF”
 - 优化范围解析与容错（支持中文逗号、自动裁剪页码、start>end 自动纠正）
+- 新增拖拽导入、最近文件、多语言与快捷键、合并排序管理器
+- 新增命名模板：支持 {name} {start} {end} {index}，默认 {name}_{start}-{end}.pdf
+
+英文版（English README）
+PDF Toolbox (Split / Merge / Preview)
+
+Overview
+This desktop GUI helps you split and merge PDFs with ease. Highlights:
+- Split by ranges (multiple ranges = multiple files; single range = one file)
+- Split into single pages
+- Preview the output before exporting
+- Merge multiple PDFs into one
+- Drag-and-drop to load input (optional dependency)
+- Recent files menu (remembers last 8)
+- Language switch (ZH/EN) and keyboard shortcuts
+- Merge Manager with drag-to-reorder
+- Naming template for range outputs
+
+Install & Run
+1) Install dependencies:
+   pip install PyPDF2
+   # Optional for drag-and-drop
+   pip install tkinterdnd2
+2) Start the GUI:
+   python split_pdf_gui.py
+
+Shortcuts
+- Ctrl+P: Preview split
+- Ctrl+Enter: Split by ranges
+- Ctrl+M: Open Merge Manager
+- Ctrl+L / Ctrl+D: Toggle Light/Dark theme
+
+Naming Template
+- Default: {name}_{start}-{end}.pdf
+- Supported variables: {name}, {start}, {end}, {index}
+  - name: base output name without extension
+  - start/end: 1-based page numbers, auto-clamped to valid range
+  - index: segment index starting from 1
+
+Build to EXE (optional)
+pyinstaller split_pdf_gui.spec
+
+Screenshots / Demo GIF
+- Files placed under `docs/`:
+  - ![Main UI](docs/main-ui.png)
+  - ![Merge Manager](docs/merge-manager.png)
+  - ![Preview](docs/preview.png)
+  - ![Demo](docs/demo.gif)
+- See `docs/README-images.md` for how to capture and replace these placeholders.

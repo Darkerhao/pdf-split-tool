@@ -9,6 +9,81 @@ import json
 import subprocess
 import sys
 
+# 可选：拖拽支持（如果已安装 tkinterdnd2）
+try:
+    from tkinterdnd2 import TkinterDnD, DND_FILES  # type: ignore
+    DND_AVAILABLE = True
+except Exception:
+    DND_AVAILABLE = False
+
+# 多语言词典
+LANG = "zh"
+STRINGS = {
+    "zh": {
+        "title": "PDF 工具箱：拆分 / 合并 / 预览",
+        "files": "文件",
+        "input_pdf": "输入 PDF 文件",
+        "output_pdf": "输出 PDF 文件",
+        "browse": "浏览...",
+        "pages_total": "总页数：",
+        "split": "拆分",
+        "range": "页码范围",
+        "range_placeholder": "例如：1-3,5,7-9（支持中文逗号）",
+        "preview": "预览拆分结果",
+        "split_by_range": "按范围拆分",
+        "split_each": "拆成单页",
+        "merge": "合并",
+        "merge_pdf": "合并 PDF",
+        "open_output": "打开输出目录",
+        "helpers": "范围助手:",
+        "every_n": "每N页拆分",
+        "equal_k": "均分为K份",
+        "clear": "清空范围",
+        "theme": "主题:",
+        "light": "浅色",
+        "dark": "深色",
+        "language": "语言:",
+        "zh": "中文",
+        "en": "EN",
+        "template": "命名模板",
+        "template_placeholder": "{name}_{start}-{end}.pdf",
+        "recent": "最近",
+    },
+    "en": {
+        "title": "PDF Toolbox: Split / Merge / Preview",
+        "files": "Files",
+        "input_pdf": "Input PDF",
+        "output_pdf": "Output PDF",
+        "browse": "Browse...",
+        "pages_total": "Pages:",
+        "split": "Split",
+        "range": "Page ranges",
+        "range_placeholder": "e.g. 1-3,5,7-9",
+        "preview": "Preview",
+        "split_by_range": "Split by ranges",
+        "split_each": "Split to pages",
+        "merge": "Merge",
+        "merge_pdf": "Merge PDFs",
+        "open_output": "Open output dir",
+        "helpers": "Helpers:",
+        "every_n": "Every N pages",
+        "equal_k": "Split K parts",
+        "clear": "Clear",
+        "theme": "Theme:",
+        "light": "Light",
+        "dark": "Dark",
+        "language": "Lang:",
+        "zh": "ZH",
+        "en": "EN",
+        "template": "Name template",
+        "template_placeholder": "{name}_{start}-{end}.pdf",
+        "recent": "Recent",
+    },
+}
+
+def T(key: str) -> str:
+    return STRINGS.get(LANG, STRINGS["zh"]).get(key, key)
+
 def parse_ranges(ranges_str):
     """解析输入的页码范围字符串，例如 '1-3,5,7-9'"""
     ranges = []
@@ -139,29 +214,35 @@ def merge_pdfs(file_list, output_file):
     except Exception as e:
         messagebox.showerror("错误", str(e))
 
+def set_input_file(filename: str):
+    if not filename:
+        return
+    input_entry.delete(0, tk.END)
+    input_entry.insert(0, filename)
+    # 自动填充输出名：与输入同目录，文件名后缀 _split.pdf
+    try:
+        base_dir = os.path.dirname(filename)
+        base_name = os.path.splitext(os.path.basename(filename))[0]
+        suggested = os.path.join(base_dir, f"{base_name}_split.pdf")
+        if not output_entry.get().strip():
+            output_entry.insert(0, suggested)
+    except Exception:
+        pass
+    # 显示总页数
+    try:
+        reader = PdfReader(filename)
+        total = len(reader.pages)
+        pages_var.set(f"总页数：{total}")
+        status_var.set("已载入 PDF")
+    except Exception:
+        pages_var.set("总页数：-")
+        status_var.set("载入失败，请重新选择")
+    add_recent_file(filename)
+
 def select_input_file():
     filename = filedialog.askopenfilename(filetypes=[("PDF files", "*.pdf")])
     if filename:
-        input_entry.delete(0, tk.END)
-        input_entry.insert(0, filename)
-        # 自动填充输出名：与输入同目录，文件名后缀 _split.pdf
-        try:
-            base_dir = os.path.dirname(filename)
-            base_name = os.path.splitext(os.path.basename(filename))[0]
-            suggested = os.path.join(base_dir, f"{base_name}_split.pdf")
-            if not output_entry.get().strip():
-                output_entry.insert(0, suggested)
-        except Exception:
-            pass
-        # 显示总页数
-        try:
-            reader = PdfReader(filename)
-            total = len(reader.pages)
-            pages_var.set(f"总页数：{total}")
-            status_var.set("已载入 PDF")
-        except Exception:
-            pages_var.set("总页数：-")
-            status_var.set("载入失败，请重新选择")
+        set_input_file(filename)
 
 def select_output_file():
     filename = filedialog.asksaveasfilename(defaultextension=".pdf",
@@ -229,22 +310,7 @@ def run_preview():
         messagebox.showerror("错误", str(e))
 
 def run_merge():
-    try:
-        files = filedialog.askopenfilenames(title="选择要合并的 PDF 文件", filetypes=[("PDF files", "*.pdf")])
-        if not files:
-            return
-        out = filedialog.asksaveasfilename(defaultextension=".pdf", filetypes=[("PDF files", "*.pdf")], title="保存合并后的 PDF")
-        if not out:
-            return
-        def task():
-            try:
-                merge_pdfs_with_progress(files, out)
-            except Exception as e:
-                post_error(e)
-        start_running_ui()
-        threading.Thread(target=task, daemon=True).start()
-    except Exception as e:
-        messagebox.showerror("错误", str(e))
+    open_merge_manager()
 
 def on_cancel():
     global cancel_requested
@@ -269,6 +335,159 @@ def open_folder(folder):
             subprocess.run(["xdg-open", folder], check=False)
     except Exception as e:
         messagebox.showerror("错误", str(e))
+
+def open_merge_manager():
+    dlg = tk.Toplevel(root)
+    dlg.title("合并管理器")
+    dlg.geometry("560x360")
+    dlg.grab_set()
+
+    frame = ttk.Frame(dlg, padding=10)
+    frame.pack(fill="both", expand=True)
+    frame.columnconfigure(1, weight=1)
+    frame.rowconfigure(0, weight=1)
+
+    lb = tk.Listbox(frame, selectmode=tk.EXTENDED)
+    lb.grid(row=0, column=0, columnspan=2, sticky="nsew")
+
+    btns = ttk.Frame(frame)
+    btns.grid(row=1, column=0, columnspan=2, sticky="ew", pady=8)
+    for i in range(8):
+        btns.columnconfigure(i, weight=1)
+
+    def add_files():
+        items = filedialog.askopenfilenames(title="选择 PDF", filetypes=[("PDF files", "*.pdf")])
+        for it in items:
+            lb.insert("end", it)
+
+    def remove_sel():
+        sel = list(lb.curselection())
+        sel.reverse()
+        for i in sel:
+            lb.delete(i)
+
+    def move_up():
+        sel = list(lb.curselection())
+        if not sel:
+            return
+        for i in sel:
+            if i == 0:
+                continue
+            txt = lb.get(i)
+            lb.delete(i)
+            lb.insert(i-1, txt)
+        lb.selection_clear(0, "end")
+        for i in [max(0, s-1) for s in sel]:
+            lb.selection_set(i)
+
+    def move_down():
+        sel = list(lb.curselection())
+        if not sel:
+            return
+        n = lb.size()
+        for i in reversed(sel):
+            if i >= n-1:
+                continue
+            txt = lb.get(i)
+            lb.delete(i)
+            lb.insert(i+1, txt)
+        lb.selection_clear(0, "end")
+        for i in [min(n-1, s+1) for s in sel]:
+            lb.selection_set(i)
+
+    def clear_all():
+        lb.delete(0, "end")
+
+    def on_ok():
+        files = list(lb.get(0, "end"))
+        if not files:
+            messagebox.showerror("错误", "请先添加要合并的 PDF")
+            return
+        out = filedialog.asksaveasfilename(defaultextension=".pdf", filetypes=[("PDF files", "*.pdf")], title="保存合并后的 PDF")
+        if not out:
+            return
+        def task():
+            try:
+                merge_pdfs_with_progress(files, out)
+            except Exception as e:
+                post_error(e)
+        start_running_ui()
+        threading.Thread(target=task, daemon=True).start()
+        dlg.destroy()
+
+    # 简单拖拽排序
+    drag_data = {"index": None}
+    def on_start_drag(event):
+        drag_data["index"] = lb.nearest(event.y)
+    def on_drag_motion(event):
+        idx = drag_data.get("index")
+        if idx is None:
+            return
+        i = lb.nearest(event.y)
+        if i != idx and 0 <= idx < lb.size():
+            txt = lb.get(idx)
+            lb.delete(idx)
+            lb.insert(i, txt)
+            lb.selection_clear(0, "end")
+            lb.selection_set(i)
+            drag_data["index"] = i
+    lb.bind("<Button-1>", on_start_drag)
+    lb.bind("<B1-Motion>", on_drag_motion)
+
+    ttk.Button(btns, text="添加文件", command=add_files).grid(row=0, column=0, padx=4)
+    ttk.Button(btns, text="移除选中", command=remove_sel).grid(row=0, column=1, padx=4)
+    ttk.Button(btns, text="上移", command=move_up).grid(row=0, column=2, padx=4)
+    ttk.Button(btns, text="下移", command=move_down).grid(row=0, column=3, padx=4)
+    ttk.Button(btns, text="清空", command=clear_all).grid(row=0, column=4, padx=4)
+    ttk.Separator(btns).grid(row=0, column=5, sticky="ew", padx=8)
+    ttk.Button(btns, text="确定合并", style="Accent.TButton", command=on_ok).grid(row=0, column=6, padx=4)
+    ttk.Button(btns, text="取消", command=dlg.destroy).grid(row=0, column=7, padx=4)
+
+# 近期文件
+recent_files = []
+
+def add_recent_file(path: str):
+    global recent_files
+    if not path:
+        return
+    path = os.path.abspath(path)
+    if path in recent_files:
+        recent_files.remove(path)
+    recent_files.insert(0, path)
+    recent_files = recent_files[:8]
+    update_recent_menu()
+    save_settings()
+
+def open_recent(idx: int):
+    if 0 <= idx < len(recent_files):
+        set_input_file(recent_files[idx])
+
+# 语言切换（简单：更新标题并提示重启以完全生效）
+def set_language(new_lang: str):
+    global LANG
+    LANG = new_lang
+    root.title(T("title"))
+    save_settings()
+    try:
+        messagebox.showinfo("Info", "语言已切换，下次启动将完全生效。/ Language changed, restart to fully apply.")
+    except Exception:
+        pass
+
+# 命名模板
+def sanitize_filename(name: str) -> str:
+    bad = '\\/:*?"<>|'
+    for ch in bad:
+        name = name.replace(ch, '_')
+    return name
+
+def render_template(base_name: str, start: int, end: int, index: int, template_text: str) -> str:
+    if not template_text:
+        template_text = "{name}_{start}-{end}.pdf"
+    try:
+        fname = template_text.format(name=base_name, start=start, end=end, index=index)
+    except Exception:
+        fname = f"{base_name}_{start}-{end}.pdf"
+    return sanitize_filename(fname)
 
 def helper_every_n_pages():
     input_file = input_entry.get().strip()
@@ -388,10 +607,17 @@ def set_theme(dark: bool):
         pass
 
 def save_settings():
+    try:
+        dark_val = bool(theme_dark_var.get())
+    except Exception:
+        dark_val = False
     data = {
         "input": input_entry.get().strip(),
         "output": output_entry.get().strip(),
-        "dark": theme_dark_var.get()
+        "dark": dark_val,
+        "lang": LANG,
+        "recent": recent_files,
+        "template": name_template_var.get() if 'name_template_var' in globals() else "{name}_{start}-{end}.pdf",
     }
     try:
         with open(SETTINGS_PATH, "w", encoding="utf-8") as f:
@@ -410,8 +636,19 @@ def load_settings():
                 if data.get("output"):
                     output_entry.insert(0, data.get("output"))
                 dark = bool(data.get("dark", False))
-                theme_dark_var.set(dark)
+                try:
+                    theme_dark_var.set(dark)
+                except Exception:
+                    pass
                 set_theme(dark)
+                global LANG, recent_files
+                LANG = data.get("lang", LANG)
+                recent_files = data.get("recent", []) or []
+                update_recent_menu()
+                # 模板
+                tmpl = data.get("template")
+                if tmpl and 'name_template_var' in globals():
+                    name_template_var.set(tmpl)
     except Exception:
         pass
 
@@ -448,6 +685,18 @@ def poll_queue():
     except queue.Empty:
         pass
     root.after(120, poll_queue)
+
+def update_recent_menu():
+    try:
+        recent_menu.delete(0, "end")
+        if not recent_files:
+            recent_menu.add_command(label="-", state="disabled")
+        else:
+            for i, path in enumerate(recent_files):
+                display = (os.path.basename(path) + "  ·  " + os.path.dirname(path))
+                recent_menu.add_command(label=display, command=lambda idx=i: open_recent(idx))
+    except Exception:
+        pass
 
 def start_running_ui():
     global cancel_requested
@@ -499,9 +748,14 @@ def do_split_with_progress(input_file: str, output_file: str, ranges):
             writer.add_page(reader.pages[page_num])
             step += 1
             post_progress(step * 100.0 / pages_to_write, f"正在写入第 {step}/{pages_to_write} 页")
-        with open(output_file, "wb") as f:
+        # 单段也允许使用模板（若用户自定义了不同扩展名则仍以模板为准）
+        base_dir = os.path.dirname(output_file) or os.getcwd()
+        base_name = os.path.splitext(os.path.basename(output_file))[0]
+        fname = render_template(base_name, s, e, 1, name_template_var.get())
+        out_path = os.path.join(base_dir, fname)
+        with open(out_path, "wb") as f:
             writer.write(f)
-        post_done(f"已导出文件：{output_file}", [output_file])
+        post_done(f"已导出文件：{out_path}", [out_path])
         return
 
     base_dir = os.path.dirname(output_file) or os.getcwd()
@@ -521,7 +775,8 @@ def do_split_with_progress(input_file: str, output_file: str, ranges):
             writer.add_page(reader.pages[page_num])
             step += 1
             post_progress(step * 100.0 / pages_to_write, f"正在写入第 {step}/{pages_to_write} 页")
-        out_path = os.path.join(base_dir, f"{base_name}_{s}-{e}.pdf")
+        fname = render_template(base_name, s, e, len(exported)+1, name_template_var.get())
+        out_path = os.path.join(base_dir, fname)
         with open(out_path, "wb") as f:
             writer.write(f)
         exported.append(out_path)
@@ -675,12 +930,22 @@ ttk.Button(toolbar, text="每N页拆分", command=helper_every_n_pages).grid(row
 ttk.Button(toolbar, text="均分为K份", command=helper_equal_k_parts).grid(row=0, column=2, padx=4)
 ttk.Button(toolbar, text="清空范围", command=clear_ranges).grid(row=0, column=3, padx=4)
 
-ttk.Separator(toolbar, orient="vertical").grid(row=0, column=4, sticky="ns", padx=8)
+# 模板输入
+ttk.Label(toolbar, text="命名模板").grid(row=0, column=4, padx=(12,4))
+name_template_var = tk.StringVar(value="{name}_{start}-{end}.pdf")
+name_template_entry = ttk.Entry(toolbar, textvariable=name_template_var, width=26)
+name_template_entry.grid(row=0, column=5, padx=2)
 
-theme_dark_var = tk.BooleanVar(value=False)
-ttk.Label(toolbar, text="主题:").grid(row=0, column=5)
-ttk.Button(toolbar, text="浅色", command=toggle_theme_light, width=6).grid(row=0, column=6, padx=2)
-ttk.Button(toolbar, text="深色", command=toggle_theme_dark, width=6).grid(row=0, column=7, padx=2)
+# 语言切换与最近
+language_var = tk.StringVar(value=LANG)
+ttk.Label(toolbar, text=T("language")).grid(row=0, column=8, padx=(12,2))
+ttk.Button(toolbar, text=T("zh"), command=lambda: set_language("zh"), width=4).grid(row=0, column=9, padx=2)
+ttk.Button(toolbar, text=T("en"), command=lambda: set_language("en"), width=4).grid(row=0, column=10, padx=2)
+
+recent_btn = ttk.Menubutton(toolbar, text=T("recent"))
+recent_menu = tk.Menu(recent_btn, tearoff=0)
+recent_btn["menu"] = recent_menu
+recent_btn.grid(row=0, column=11, padx=(12,2))
 
 # 控件集合（执行期间禁用）
 controls_to_toggle = []
@@ -701,5 +966,33 @@ SETTINGS_PATH = os.path.join(os.path.dirname(__file__), "settings.json")
 # 启动轮询与加载设置
 root.after(150, poll_queue)
 load_settings()
+
+# 拖拽到输入框（可选）
+if DND_AVAILABLE:
+    try:
+        def _handle_drop(event):
+            data = event.data
+            # Windows 下可能是大括号包裹路径或多个文件
+            if data.startswith("{") and data.endswith("}"):
+                data = data[1:-1]
+            first = data.split() [0]
+            if first.lower().endswith(".pdf") and os.path.exists(first):
+                set_input_file(first)
+        input_entry.drop_target_register(DND_FILES)
+        input_entry.dnd_bind('<<Drop>>', _handle_drop)
+    except Exception:
+        pass
+
+# 快捷键
+try:
+    root.bind('<Control-p>', lambda e: run_preview())
+    root.bind('<Control-P>', lambda e: run_preview())
+    root.bind('<Control-Return>', lambda e: run_split())
+    root.bind('<Control-m>', lambda e: open_merge_manager())
+    root.bind('<Control-M>', lambda e: open_merge_manager())
+    root.bind('<Control-l>', lambda e: toggle_theme_light())
+    root.bind('<Control-d>', lambda e: toggle_theme_dark())
+except Exception:
+    pass
 
 root.mainloop()

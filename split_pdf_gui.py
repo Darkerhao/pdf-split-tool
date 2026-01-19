@@ -8,6 +8,21 @@ import queue
 import json
 import subprocess
 import sys
+import shutil
+import re
+
+# 尝试导入 EPUB 转换所需的库
+try:
+    from ebooklib import epub
+    from reportlab.pdfgen import canvas
+    from reportlab.lib.pagesizes import A4, A5, letter, legal
+    from reportlab.lib.units import inch
+    from reportlab.pdfbase import pdfmetrics
+    from reportlab.pdfbase.ttfonts import TTFont
+    import html2text
+    EPUB_LIBS_AVAILABLE = True
+except ImportError:
+    EPUB_LIBS_AVAILABLE = False
 
 # 可选：拖拽支持（如果已安装 tkinterdnd2）
 try:
@@ -618,6 +633,10 @@ def save_settings():
         "lang": LANG,
         "recent": recent_files,
         "template": name_template_var.get() if 'name_template_var' in globals() else "{name}_{start}-{end}.pdf",
+        # EPUB 相关
+        "epub_input": (epub_input_entry.get().strip() if 'epub_input_entry' in globals() else ""),
+        "epub_output": (epub_output_entry.get().strip() if 'epub_output_entry' in globals() else ""),
+        "epub_paper": (epub_paper_var.get().strip() if 'epub_paper_var' in globals() else "a4"),
     }
     try:
         with open(SETTINGS_PATH, "w", encoding="utf-8") as f:
@@ -649,6 +668,15 @@ def load_settings():
                 tmpl = data.get("template")
                 if tmpl and 'name_template_var' in globals():
                     name_template_var.set(tmpl)
+                # EPUB 相关
+                if data.get("epub_input") and 'epub_input_entry' in globals():
+                    epub_input_entry.delete(0, tk.END)
+                    epub_input_entry.insert(0, data.get("epub_input"))
+                if data.get("epub_output") and 'epub_output_entry' in globals():
+                    epub_output_entry.delete(0, tk.END)
+                    epub_output_entry.insert(0, data.get("epub_output"))
+                if 'epub_paper_var' in globals():
+                    epub_paper_var.set(data.get("epub_paper", "a4") or "a4")
     except Exception:
         pass
 
@@ -824,11 +852,245 @@ def merge_pdfs_with_progress(file_list, output_file):
         writer.write(f)
     post_done(f"已合并 {len(file_list)} 个文件，共 {added} 页\n输出：{output_file}", [output_file])
 
+def find_ebook_convert() -> str:
+    """查找 Calibre 的 ebook-convert 可执行文件路径。优先使用 PATH，其次尝试常见安装目录。"""
+    path = shutil.which("ebook-convert")
+    if path:
+        return path
+    candidates = [
+        os.path.join("C:\\Program Files\\Calibre", "ebook-convert.exe"),
+        os.path.join("C:\\Program Files (x86)\\Calibre", "ebook-convert.exe"),
+        os.path.join("C:\\Program Files\\Calibre2", "ebook-convert.exe"),
+    ]
+    for p in candidates:
+        if os.path.exists(p):
+            return p
+    return ""
+
+def epub_to_pdf_python(epub_path: str, pdf_path: str, paper_size: str = "a4"):
+    """使用 Python 库将 EPUB 转换为 PDF（不依赖 Calibre）"""
+    if not EPUB_LIBS_AVAILABLE:
+        raise RuntimeError("缺少必要的 Python 库\n请安装：pip install ebooklib reportlab html2text")
+    
+    # 纸张大小映射
+    paper_sizes = {
+        "a4": A4,
+        "a5": A5, 
+        "letter": letter,
+        "legal": legal
+    }
+    page_size = paper_sizes.get(paper_size.lower(), A4)
+    
+    # 读取 EPUB
+    book = epub.read_epub(epub_path)
+    
+    # 创建 PDF
+    c = canvas.Canvas(pdf_path, pagesize=page_size)
+    width, height = page_size
+    
+    # 设置字体，支持中文
+    try:
+        # 尝试使用支持中文的字体
+        c.setFont("Helvetica", 12)
+    except:
+        try:
+            # 尝试使用系统默认字体
+            c.setFont("Arial", 12)
+        except:
+            c.setFont("Helvetica", 12)
+    
+    # 转换 HTML 为文本
+    h = html2text.HTML2Text()
+    h.ignore_links = True
+    h.ignore_images = True
+    
+    y_position = height - 50
+    line_height = 14
+    margin = 50
+    
+    for item in book.get_items():
+        if item.get_type() == epub.ITEM_DOCUMENT:
+            # 获取章节内容，处理编码问题
+            raw_content = item.get_content()
+            content = None
+            
+            # 尝试多种编码，使用更安全的方法
+            encodings = ['utf-8', 'gbk', 'gb2312', 'latin-1', 'cp1252', 'utf-16']
+            content = None
+            
+            for encoding in encodings:
+                try:
+                    content = raw_content.decode(encoding)
+                    break
+                except (UnicodeDecodeError, UnicodeError, LookupError):
+                    continue
+            
+            # 如果所有编码都失败，使用忽略错误的方式
+            if content is None:
+                try:
+                    content = raw_content.decode('utf-8', errors='ignore')
+                except Exception:
+                    # 最后的保险措施
+                    content = str(raw_content, errors='ignore')
+            
+            # 转换为纯文本
+            text = h.handle(content)
+            # 清理文本
+            text = re.sub(r'\n\s*\n', '\n\n', text)
+            lines = text.split('\n')
+            
+            for line in lines:
+                if cancel_requested:
+                    post_done("已取消", None)
+                    return
+                
+                line = line.strip()
+                if not line:
+                    y_position -= line_height
+                    continue
+                
+                # 检查是否需要新页面
+                if y_position < margin:
+                    c.showPage()
+                    y_position = height - 50
+                
+                # 处理长行，确保文本安全
+                try:
+                    # 清理文本，移除可能导致问题的字符
+                    safe_line = line.replace('\x00', '').replace('\r', '').strip()
+                    if not safe_line:
+                        y_position -= line_height
+                        continue
+                    
+                    if len(safe_line) > 80:
+                        words = safe_line.split()
+                        current_line = ""
+                        for word in words:
+                            if len(current_line + " " + word) > 80:
+                                if current_line:
+                                    c.drawString(margin, y_position, current_line)
+                                    y_position -= line_height
+                                    if y_position < margin:
+                                        c.showPage()
+                                        y_position = height - 50
+                                current_line = word
+                            else:
+                                current_line += (" " + word) if current_line else word
+                        if current_line:
+                            c.drawString(margin, y_position, current_line)
+                            y_position -= line_height
+                    else:
+                        c.drawString(margin, y_position, safe_line)
+                        y_position -= line_height
+                except Exception as e:
+                    # 如果单行处理失败，跳过这行
+                    y_position -= line_height
+                    continue
+                
+                # 更新进度（简单估算）
+                post_progress(50, "正在转换内容...")
+    
+    c.save()
+    post_done(f"已完成 EPUB 转 PDF：{pdf_path}", [pdf_path])
+
+def do_epub_convert_with_progress(epub_path: str, pdf_path: str, paper_size: str = "a4"):
+    """将 EPUB 转为 PDF，优先使用 Python 库，失败则尝试 Calibre。"""
+    import traceback
+    
+    try:  # 最外层异常捕获
+        python_error = None
+        
+        # 首先尝试使用 Python 库
+        try:
+            post_progress(10, f"尝试使用 Python 库转换... (库可用: {EPUB_LIBS_AVAILABLE})")
+            epub_to_pdf_python(epub_path, pdf_path, paper_size)
+            post_done(f"EPUB 文件 '{os.path.basename(epub_path)}' 已成功转换为 PDF。", [pdf_path])
+            return
+        except Exception as e:
+            python_error = str(e)
+            post_progress(20, f"Python 库转换失败：{python_error[:50]}...")
+            # 继续尝试 Calibre
+    
+        # 尝试使用 Calibre
+        exe = find_ebook_convert()
+        if not exe:
+            error_msg = "转换失败：\n"
+            if python_error:
+                error_msg += f"1. Python 库错误：{python_error}\n"
+            error_msg += f"2. 未找到 Calibre ebook-convert\n\n"
+            error_msg += "解决方案：\n"
+            error_msg += "- 安装 Python 库：pip install ebooklib reportlab html2text\n"
+            error_msg += "- 或安装 Calibre：https://calibre-ebook.com/download"
+            post_error(error_msg)
+            return
+        
+        # Calibre 转换逻辑
+        os.makedirs(os.path.dirname(pdf_path) or os.getcwd(), exist_ok=True)
+        args = [exe, epub_path, pdf_path, "--paper-size", paper_size]
+        try:
+            proc = subprocess.Popen(
+                args,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
+                text=False,  # 使用二进制模式读取
+                bufsize=1
+            )
+        except Exception as e:
+            post_error(f"启动 Calibre 转换失败：{str(e)}")
+            return
+
+        progress_pattern = re.compile(rb"(\d{1,3})%")  # 使用二进制模式匹配
+        last_pct = -1
+        while True:
+            if cancel_requested and proc.poll() is None:
+                try:
+                    proc.terminate()
+                except Exception:
+                    pass
+                post_done("已取消", None)
+                return
+            line_bytes = proc.stdout.readline() if proc.stdout else b""
+            if not line_bytes:
+                if proc.poll() is not None:
+                    break
+                continue
+            # 尝试使用 UTF-8 解码，失败则使用忽略错误的方式
+            try:
+                line = line_bytes.decode('utf-8')
+            except UnicodeDecodeError:
+                line = line_bytes.decode('gbk', errors='ignore')
+            except Exception:
+                line = str(line_bytes, errors='ignore')
+            m = re.search(r"(\d{1,3})%", line)
+            if m:
+                try:
+                    pct = int(m.group(1))
+                    if 0 <= pct <= 100 and pct != last_pct:
+                        last_pct = pct
+                        post_progress(pct, f"转换进度 {pct}%")
+                except Exception:
+                    pass
+            else:
+                # 非进度行，显示为状态文本（不过于频繁）
+                if last_pct >= 0:
+                    post_progress(last_pct, line.strip()[:80])
+
+        code = proc.poll()
+        if code == 0:
+            post_done(f"已完成 EPUB 转 PDF：{pdf_path}", [pdf_path])
+        else:
+            post_error("Calibre 转换失败，请检查 EPUB 文件与输出路径是否有效。")
+    
+    except Exception as final_e:
+        # 捕获任何未处理的异常
+        error_details = traceback.format_exc()
+        post_error(f"转换过程中发生意外错误：\n{final_e}\n\n详细信息：\n{error_details}\n\n请检查文件或尝试其他转换方式。")
+
 # ================= 界面部分 =================
 root = tk.Tk()
 root.title("PDF 工具箱：拆分 / 合并 / 预览")
-root.geometry("720x360")
-root.minsize(680, 360)
+root.geometry("750x560")
+root.minsize(800, 520)
 
 # 主题样式
 style = ttk.Style()
@@ -846,6 +1108,9 @@ container.grid(row=0, column=0, sticky="nsew")
 root.columnconfigure(0, weight=1)
 root.rowconfigure(0, weight=1)
 container.columnconfigure(1, weight=1)
+
+# 主题开关变量
+theme_dark_var = tk.BooleanVar(value=False)
 
 # 文件区域
 files_frame = ttk.LabelFrame(container, text="文件")
@@ -899,6 +1164,74 @@ merge_frame = ttk.LabelFrame(container, text="合并")
 merge_frame.grid(row=2, column=0, columnspan=3, sticky="ew", padx=4, pady=4)
 ttk.Button(merge_frame, text="合并 PDF", command=run_merge, width=18, style="Accent.TButton").grid(row=0, column=0, padx=8, pady=6)
 ttk.Button(merge_frame, text="打开输出目录", command=open_output_dir, width=18).grid(row=0, column=1, padx=8, pady=6)
+
+# EPUB 转 PDF 区域
+epub_frame = ttk.LabelFrame(container, text="EPUB 转 PDF")
+epub_frame.grid(row=3, column=0, columnspan=3, sticky="ew", padx=4, pady=4)
+for c in range(3):
+    epub_frame.columnconfigure(c, weight=1 if c == 1 else 0)
+
+ttk.Label(epub_frame, text="输入 EPUB 文件").grid(row=0, column=0, sticky="w", padx=8, pady=6)
+epub_input_entry = ttk.Entry(epub_frame)
+epub_input_entry.grid(row=0, column=1, sticky="ew", padx=4)
+
+def select_epub_input():
+    fname = filedialog.askopenfilename(filetypes=[("EPUB files", "*.epub")])
+    if not fname:
+        return
+    epub_input_entry.delete(0, tk.END)
+    epub_input_entry.insert(0, fname)
+    # 若输出为空，自动建议输出名
+    try:
+        base_dir = os.path.dirname(fname)
+        base_name = os.path.splitext(os.path.basename(fname))[0]
+        suggested = os.path.join(base_dir, f"{base_name}.pdf")
+        if not epub_output_entry.get().strip():
+            epub_output_entry.insert(0, suggested)
+    except Exception:
+        pass
+    save_settings()
+
+ttk.Button(epub_frame, text="浏览...", command=select_epub_input, width=10).grid(row=0, column=2, padx=8)
+
+ttk.Label(epub_frame, text="输出 PDF 文件").grid(row=1, column=0, sticky="w", padx=8, pady=6)
+epub_output_entry = ttk.Entry(epub_frame)
+epub_output_entry.grid(row=1, column=1, sticky="ew", padx=4)
+
+def select_epub_output():
+    fname = filedialog.asksaveasfilename(defaultextension=".pdf", filetypes=[("PDF files", "*.pdf")])
+    if not fname:
+        return
+    epub_output_entry.delete(0, tk.END)
+    epub_output_entry.insert(0, fname)
+    save_settings()
+
+ttk.Button(epub_frame, text="浏览...", command=select_epub_output, width=10).grid(row=1, column=2, padx=8)
+
+ttk.Label(epub_frame, text="纸张").grid(row=2, column=0, sticky="w", padx=8, pady=6)
+epub_paper_var = tk.StringVar(value="a4")
+epub_paper_combo = ttk.Combobox(epub_frame, textvariable=epub_paper_var, state="readonly", width=12,
+                                values=("a4", "a5", "letter", "legal"))
+epub_paper_combo.grid(row=2, column=1, sticky="w", padx=4)
+
+def run_epub_convert():
+    epub_in = epub_input_entry.get().strip()
+    pdf_out = epub_output_entry.get().strip()
+    if not epub_in or not pdf_out:
+        messagebox.showerror("错误", "请先选择 EPUB 输入与 PDF 输出文件！")
+        return
+    paper = epub_paper_var.get().strip() or "a4"
+
+    def task():
+        try:
+            do_epub_convert_with_progress(epub_in, pdf_out, paper)
+        except Exception as e:
+            post_error(e)
+
+    start_running_ui()
+    threading.Thread(target=task, daemon=True).start()
+
+ttk.Button(epub_frame, text="开始转换", command=run_epub_convert, width=18, style="Accent.TButton").grid(row=2, column=2, padx=8)
 
 # 状态栏
 status_var = tk.StringVar(value="就绪")
@@ -955,6 +1288,11 @@ for parent in [files_frame, split_frame, merge_frame, toolbar]:
     for child in parent.winfo_children():
         if isinstance(child, ttk.Button) or isinstance(child, ttk.Entry):
             controls_to_toggle.append(child)
+
+# 将 EPUB 区域控件也加入可禁用列表
+for child in epub_frame.winfo_children():
+    if isinstance(child, ttk.Button) or isinstance(child, ttk.Entry) or isinstance(child, ttk.Combobox):
+        controls_to_toggle.append(child)
 
 # 进度队列与取消标志
 progress_queue: "queue.Queue" = queue.Queue()

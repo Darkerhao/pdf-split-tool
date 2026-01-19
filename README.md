@@ -6,6 +6,7 @@ PDF 工具箱（拆分 / 合并 / 预览）
 - 拆成单页（每页生成一个 PDF）
 - 预览拆分结果（显示将生成几个文件、每个文件的页码范围与页数）
 - 合并多个 PDF 到一个 PDF
+- EPUB 转 PDF（基于 Calibre 的 ebook-convert，带进度与可取消）
 - 拖拽导入输入文件（可选安装 tkinterdnd2）
 - 最近文件菜单（记忆最近 8 个）
 - 多语言切换（中文/英文）、快捷键支持
@@ -18,6 +19,12 @@ PDF 工具箱（拆分 / 合并 / 预览）
    pip install PyPDF2
    # 可选（启用拖拽输入）
    pip install tkinterdnd2
+   # 可选（启用 EPUB 转 PDF）
+   # 方案一：使用 Python 库（推荐，无需额外安装）
+   pip install ebooklib reportlab html2text
+   # 方案二：使用 Calibre（功能更强大）
+   # 请安装 Calibre，并确保命令 ebook-convert 可用：
+   # https://calibre-ebook.com/download
 2) 运行 GUI：
    python split_pdf_gui.py
 3）打包
@@ -62,6 +69,18 @@ PDF 工具箱（拆分 / 合并 / 预览）
 4) 可先点击“预览拆分结果”确认将生成的文件与页数
 5) 点击“按范围拆分”或“拆成单页”；若需合并，点击“合并 PDF”并选择多个文件
 
+EPUB 转 PDF（GUI）
+1) 在“EPUB 转 PDF”区块中选择输入的 .epub 文件与输出 .pdf 文件
+2) 选择纸张（a4/a5/letter/legal）
+3) 点击“开始转换”；若系统已安装 Calibre 且 ebook-convert 在 PATH 中，会显示转换进度
+4) 可随时点击“取消运行”中止
+
+注意：
+- 程序会优先尝试使用 Python 库（ebooklib + reportlab）进行转换，无需安装额外软件
+- 如果 Python 库转换失败，会自动尝试使用 Calibre 的 ebook-convert
+- Windows 安装 Calibre 时可勾选"Add to PATH"；若未加入 PATH，本工具会尝试在常见安装目录中查找
+- 若仍无法找到，请手动将 Calibre 的安装目录加入系统环境变量 PATH
+
 命令行脚本（可选）
 也可使用 split_pdf.py 在命令行拆分：
   python split_pdf.py input.pdf output.pdf 5-10 12-15
@@ -88,6 +107,7 @@ PDF 工具箱（拆分 / 合并 / 预览）
 - 优化范围解析与容错（支持中文逗号、自动裁剪页码、start>end 自动纠正）
 - 新增拖拽导入、最近文件、多语言与快捷键、合并排序管理器
 - 新增命名模板：支持 {name} {start} {end} {index}，默认 {name}_{start}-{end}.pdf
+- 新增 EPUB 转 PDF：基于 Calibre 的 ebook-convert，支持纸张选择、进度与可取消
 
 英文版（English README）
 PDF Toolbox (Split / Merge / Preview)

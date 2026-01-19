@@ -249,9 +249,13 @@ def set_input_file(filename: str):
         total = len(reader.pages)
         pages_var.set(f"总页数：{total}")
         status_var.set("已载入 PDF")
+        # 启用预览按钮
+        preview_btn.configure(state="normal")
     except Exception:
         pages_var.set("总页数：-")
         status_var.set("载入失败，请重新选择")
+        # 禁用预览按钮
+        preview_btn.configure(state="disabled")
     add_recent_file(filename)
 
 def select_input_file():
@@ -350,6 +354,247 @@ def open_folder(folder):
             subprocess.run(["xdg-open", folder], check=False)
     except Exception as e:
         messagebox.showerror("错误", str(e))
+
+def open_pdf_previewer(pdf_path):
+    """打开PDF预览窗口"""
+    if not pdf_path or not os.path.exists(pdf_path):
+        messagebox.showerror("错误", "请先选择有效的 PDF 文件！")
+        return
+    
+    try:
+        # 创建预览窗口
+        preview_window = tk.Toplevel(root)
+        preview_window.title(f"PDF 预览 - {os.path.basename(pdf_path)}")
+        preview_window.geometry("800x600")
+        preview_window.minsize(600, 400)
+        
+        # 创建主框架
+        main_frame = ttk.Frame(preview_window, style="Modern.TFrame")
+        main_frame.pack(fill="both", expand=True, padx=10, pady=10)
+        
+        # 创建工具栏
+        toolbar_frame = ttk.Frame(main_frame, style="Modern.TFrame")
+        toolbar_frame.pack(fill="x", pady=(0, 10))
+        
+        # 页码显示
+        page_var = tk.StringVar(value="第 1 页 / 共 0 页")
+        page_label = ttk.Label(toolbar_frame, textvariable=page_var, style="Modern.TLabel")
+        page_label.pack(side="left", padx=10)
+        
+        # 导航按钮
+        nav_frame = ttk.Frame(toolbar_frame)
+        nav_frame.pack(side="left", padx=10)
+        
+        ttk.Button(nav_frame, text="首页", command=lambda: show_page(0), style="Modern.TButton").pack(side="left", padx=2)
+        ttk.Button(nav_frame, text="上一页", command=lambda: show_page(current_page - 1), style="Modern.TButton").pack(side="left", padx=2)
+        ttk.Button(nav_frame, text="下一页", command=lambda: show_page(current_page + 1), style="Modern.TButton").pack(side="left", padx=2)
+        ttk.Button(nav_frame, text="末页", command=lambda: show_page(total_pages - 1), style="Modern.TButton").pack(side="left", padx=2)
+        
+        # 旋转按钮
+        rotate_frame = ttk.Frame(toolbar_frame)
+        rotate_frame.pack(side="left", padx=10)
+        
+        ttk.Button(rotate_frame, text="向左旋转", command=lambda: rotate_page(-90), style="Modern.TButton").pack(side="left", padx=2)
+        ttk.Button(rotate_frame, text="向右旋转", command=lambda: rotate_page(90), style="Modern.TButton").pack(side="left", padx=2)
+        
+        # 缩放控制
+        zoom_frame = ttk.Frame(toolbar_frame)
+        zoom_frame.pack(side="right", padx=10)
+        
+        zoom_var = tk.DoubleVar(value=1.0)
+        ttk.Label(zoom_frame, text="缩放:", style="Modern.TLabel").pack(side="left", padx=2)
+        ttk.Button(zoom_frame, text="50%", command=lambda: set_zoom(0.5), style="Modern.TButton").pack(side="left", padx=2)
+        ttk.Button(zoom_frame, text="75%", command=lambda: set_zoom(0.75), style="Modern.TButton").pack(side="left", padx=2)
+        ttk.Button(zoom_frame, text="100%", command=lambda: set_zoom(1.0), style="Modern.TButton").pack(side="left", padx=2)
+        ttk.Button(zoom_frame, text="150%", command=lambda: set_zoom(1.5), style="Modern.TButton").pack(side="left", padx=2)
+        ttk.Button(zoom_frame, text="200%", command=lambda: set_zoom(2.0), style="Modern.TButton").pack(side="left", padx=2)
+        
+        # 初始化全屏变量
+        fullscreen = False
+        
+        # 切换全屏函数（在使用前定义）
+        def toggle_fullscreen():
+            nonlocal fullscreen
+            fullscreen = not fullscreen
+            preview_window.attributes("-fullscreen", fullscreen)
+        
+        # 全屏按钮
+        ttk.Button(toolbar_frame, text="全屏", command=toggle_fullscreen, style="Modern.TButton").pack(side="right", padx=10)
+        
+        # 创建Canvas用于显示PDF页面
+        canvas_frame = ttk.Frame(main_frame)
+        canvas_frame.pack(fill="both", expand=True)
+        
+        canvas = tk.Canvas(canvas_frame, bg="#ffffff", bd=0, highlightthickness=0)
+        canvas.pack(fill="both", expand=True)
+        
+        # 添加滚动条
+        v_scrollbar = ttk.Scrollbar(canvas_frame, orient="vertical", command=canvas.yview)
+        v_scrollbar.pack(side="right", fill="y")
+        h_scrollbar = ttk.Scrollbar(canvas_frame, orient="horizontal", command=canvas.xview)
+        h_scrollbar.pack(side="bottom", fill="x")
+        
+        canvas.configure(yscrollcommand=v_scrollbar.set, xscrollcommand=h_scrollbar.set)
+        canvas.bind("<Configure>", lambda e: canvas.configure(scrollregion=canvas.bbox("all")))
+        
+        # 初始化变量
+        current_page = 0
+        total_pages = 0
+        zoom = 1.0
+        rotation = 0
+        doc = None
+        
+        # 显示指定页码
+        def show_page(page_num):
+            nonlocal current_page
+            if page_num < 0:
+                page_num = 0
+            elif page_num >= total_pages:
+                page_num = total_pages - 1
+            
+            current_page = page_num
+            page_var.set(f"第 {current_page + 1} 页 / 共 {total_pages} 页")
+            
+            # 清除Canvas
+            canvas.delete("all")
+            
+            if doc:
+                # 使用PyMuPDF渲染
+                try:
+                    page = doc.load_page(current_page)
+                    # 应用旋转
+                    page.set_rotation(rotation % 360)
+                    
+                    # 计算缩放后的尺寸
+                    zoom_matrix = fitz.Matrix(zoom, zoom)
+                    pix = page.get_pixmap(matrix=zoom_matrix)
+                    
+                    # 转换为PIL图像
+                    from PIL import Image, ImageTk
+                    img = Image.frombytes("RGB", [pix.width, pix.height], pix.samples)
+                    
+                    # 转换为PhotoImage
+                    photo = ImageTk.PhotoImage(img)
+                    
+                    # 显示图像
+                    canvas.create_image(0, 0, anchor="nw", image=photo)
+                    canvas.image = photo  # 保持引用
+                    
+                    # 更新滚动区域
+                    canvas.configure(scrollregion=canvas.bbox("all"))
+                    
+                except Exception as e:
+                    canvas.create_text(400, 300, text=f"渲染失败: {str(e)}", 
+                                      font=("Segoe UI", 12), fill="red", justify="center")
+            else:
+                # 简化模式
+                try:
+                    from PIL import Image, ImageTk, ImageDraw
+                    
+                    # 创建一个简单的图像
+                    img = Image.new('RGB', (800, 600), color='#ffffff')
+                    d = ImageDraw.Draw(img)
+                    d.text((100, 100), f"PDF页面 {current_page + 1}", fill=(0, 0, 0))
+                    d.text((100, 120), f"总页数: {total_pages}", fill=(0, 0, 0))
+                    d.text((100, 140), "注意: 这是一个简化的PDF预览", fill=(0, 0, 0))
+                    d.text((100, 160), "完整的PDF渲染需要安装PyMuPDF库", fill=(0, 0, 0))
+                    d.text((100, 180), "请运行: pip install PyMuPDF", fill=(0, 0, 0))
+                    
+                    # 缩放图像
+                    width, height = img.size
+                    new_width = int(width * zoom)
+                    new_height = int(height * zoom)
+                    img = img.resize((new_width, new_height), Image.Resampling.LANCZOS)
+                    
+                    # 转换为PhotoImage
+                    photo = ImageTk.PhotoImage(img)
+                    
+                    # 显示图像
+                    canvas.create_image(0, 0, anchor="nw", image=photo)
+                    canvas.image = photo  # 保持引用
+                    
+                    # 更新滚动区域
+                    canvas.configure(scrollregion=canvas.bbox("all"))
+                    
+                except ImportError:
+                    # 如果缺少必要的库，显示文本信息
+                    canvas.create_text(400, 300, text=f"PDF页面 {current_page + 1}\n总页数: {total_pages}\n\n注意: 无法渲染PDF页面\n请安装必要的库: Pillow, PyMuPDF", 
+                                      font=("Segoe UI", 12), fill="black", justify="center")
+                except Exception as e:
+                    canvas.create_text(400, 300, text=f"无法显示页面: {str(e)}", 
+                                      font=("Segoe UI", 12), fill="red", justify="center")
+        
+        # 设置缩放级别
+        def set_zoom(level):
+            nonlocal zoom
+            zoom = level
+            show_page(current_page)
+        
+        # 旋转页面
+        def rotate_page(angle):
+            nonlocal rotation
+            rotation += angle
+            show_page(current_page)
+        
+        # 尝试使用PyMuPDF打开PDF
+        try:
+            import fitz  # PyMuPDF
+            doc = fitz.open(pdf_path)
+            total_pages = len(doc)
+        except ImportError:
+            # 如果没有PyMuPDF，使用简化模式
+            reader = PdfReader(pdf_path)
+            total_pages = len(reader.pages)
+            doc = None
+        except Exception as e:
+            messagebox.showerror("错误", f"无法打开PDF文件: {str(e)}")
+            return
+        
+        # 初始显示第一页
+        show_page(0)
+        
+        # 绑定键盘事件
+        def on_key_press(event):
+            if event.keysym == "Left":
+                show_page(current_page - 1)
+            elif event.keysym == "Right":
+                show_page(current_page + 1)
+            elif event.keysym == "Home":
+                show_page(0)
+            elif event.keysym == "End":
+                show_page(total_pages - 1)
+            elif event.keysym == "plus":
+                set_zoom(min(3.0, zoom + 0.1))
+            elif event.keysym == "minus":
+                set_zoom(max(0.1, zoom - 0.1))
+            elif event.keysym == "F11":
+                toggle_fullscreen()
+        
+        preview_window.bind("<KeyPress>", on_key_press)
+        
+        # 绑定鼠标滚轮事件
+        def on_mouse_wheel(event):
+            if event.delta > 0:
+                # 放大
+                new_zoom = min(3.0, zoom + 0.1)
+                set_zoom(new_zoom)
+            else:
+                # 缩小
+                new_zoom = max(0.1, zoom - 0.1)
+                set_zoom(new_zoom)
+        
+        canvas.bind("<MouseWheel>", on_mouse_wheel)
+        
+        # 窗口关闭时释放资源
+        def on_close():
+            if doc:
+                doc.close()
+            preview_window.destroy()
+        
+        preview_window.protocol("WM_DELETE_WINDOW", on_close)
+        
+    except Exception as e:
+        messagebox.showerror("错误", f"打开PDF预览失败: {str(e)}")
 
 def open_merge_manager():
     dlg = tk.Toplevel(root)
@@ -578,32 +823,35 @@ def set_theme(dark: bool):
                 style.theme_use(DARK_THEME)
             except Exception:
                 pass
-            bg = "#1f2330"
-            fg = "#e6e6e6"
-            subbg = "#2a2f3a"
-            accent = "#539bf5"
+            bg = COLORS["dark"]["bg"]
+            fg = COLORS["dark"]["fg"]
+            subbg = COLORS["dark"]["subbg"]
+            accent = COLORS["dark"]["accent"]
             root.configure(bg=bg)
-            style.configure("TFrame", background=bg)
-            style.configure("TLabelframe", background=bg, foreground=fg)
-            style.configure("TLabelframe.Label", background=bg, foreground=fg)
-            style.configure("TLabel", background=bg, foreground=fg)
-            style.configure("TEntry", fieldbackground=subbg, foreground=fg)
+            style.configure("Modern.TFrame", background=bg)
+            style.configure("Modern.TLabelframe", background=bg, foreground=fg, bordercolor=COLORS["dark"]["border"])
+            style.configure("Modern.TLabelframe.Label", background=bg, foreground=fg)
+            style.configure("Modern.TLabel", background=bg, foreground=fg)
+            style.configure("Modern.TEntry", fieldbackground=subbg, foreground=fg, bordercolor=COLORS["dark"]["border"])
             # 普通按钮：深色底、浅色字，悬停变亮，禁用变灰
-            style.configure("TButton", background=subbg, foreground=fg, padding=6)
+            style.configure("Modern.TButton", background=subbg, foreground=fg, padding=8, bordercolor=COLORS["dark"]["border"])
             style.map(
-                "TButton",
+                "Modern.TButton",
                 background=[("active", "#3a4150"), ("!active", subbg), ("disabled", "#2a2f3a")],
-                foreground=[("disabled", "#8a8f98"), ("!disabled", fg)],
+                foreground=[("disabled", COLORS["dark"]["text_disabled"]), ("!disabled", fg)],
+                bordercolor=[("active", accent), ("!active", COLORS["dark"]["border"])]
             )
             # 强调按钮：用于主要动作
-            style.configure("Accent.TButton", background=accent, foreground="#0b1320", padding=6)
+            style.configure("Modern.Accent.TButton", background=accent, foreground="#000000", padding=8)
             style.map(
-                "Accent.TButton",
-                background=[("active", "#6aa8ff"), ("!active", accent), ("disabled", "#3a4760")],
-                foreground=[("disabled", "#c7cfdb"), ("!disabled", "#0b1320")],
+                "Modern.Accent.TButton",
+                background=[("active", COLORS["dark"]["accent_hover"]), ("!active", accent), ("disabled", "#3a4760")],
+                foreground=[("disabled", "#666666"), ("!disabled", "#000000")],
             )
-            style.configure("TSeparator", background=subbg)
-            style.configure("Horizontal.TProgressbar", troughcolor=subbg, background=accent)
+            style.configure("Modern.TSeparator", background=COLORS["dark"]["border"])
+            style.configure("Modern.Horizontal.TProgressbar", troughcolor=subbg, background=accent)
+            style.configure("Modern.TCombobox", fieldbackground=subbg, foreground=fg, bordercolor=COLORS["dark"]["border"])
+            style.configure("Modern.TMenubutton", background=subbg, foreground=fg, bordercolor=COLORS["dark"]["border"])
             status_bar.configure(background=bg, foreground=fg)
         else:
             # 重新创建 Style 并切回浅色主题，清除所有暗色覆盖
@@ -612,9 +860,11 @@ def set_theme(dark: bool):
                 style.theme_use(LIGHT_THEME)
             except Exception:
                 pass
+            # 重新配置现代化浅色样式
+            configure_modern_styles()
             # 恢复根背景与状态栏为浅色
-            fallback_bg = style.lookup("TFrame", "background") or DEFAULT_BG
-            fallback_fg = style.lookup("TLabel", "foreground") or "black"
+            fallback_bg = COLORS["light"]["bg"]
+            fallback_fg = COLORS["light"]["fg"]
             root.configure(bg=fallback_bg)
             status_bar.configure(background=fallback_bg, foreground=fallback_fg)
         save_settings()
@@ -687,7 +937,38 @@ def post_done(msg: str, open_paths=None):
     progress_queue.put(("done", msg, open_paths))
 
 def post_error(err: Exception):
-    progress_queue.put(("error", str(err)))
+    """优化的错误提示函数，提供用户友好的错误信息"""
+    error_message = str(err)
+    
+    # 常见错误类型的用户友好提示
+    friendly_messages = {
+        "No module named": "缺少必要的依赖库，请运行以下命令安装：\npip install PyPDF2 ebooklib reportlab html2text Pillow",
+        "No such file or directory": "文件不存在，请检查文件路径是否正确",
+        "Permission denied": "权限不足，请检查文件或文件夹的访问权限",
+        "Unsupported file format": "不支持的文件格式，请确保选择的是有效的 PDF 或 EPUB 文件",
+        "Failed to read PDF": "无法读取 PDF 文件，可能是文件损坏或格式不兼容",
+        "gbk codec can't decode": "文件编码错误，尝试使用其他编码方式打开文件",
+        "Merge failed": "合并失败，请确保选择的文件都是有效的 PDF 文件",
+    }
+    
+    # 查找匹配的友好提示
+    friendly_message = None
+    for key, msg in friendly_messages.items():
+        if key in error_message:
+            friendly_message = msg
+            break
+    
+    if friendly_message:
+        # 提供友好的错误提示
+        error_details = traceback.format_exc() if isinstance(err, Exception) else str(err)
+        post_error_with_details(f"操作失败：\n{friendly_message}\n\n详细信息：\n{error_details}\n\n请尝试上述解决方法或联系技术支持。")
+    else:
+        # 通用错误提示
+        post_error_with_details(f"操作过程中发生错误：\n{error_message}\n\n请检查操作步骤是否正确，或尝试重启应用程序。\n\n如果问题持续存在，请联系技术支持。")
+
+def post_error_with_details(detailed_message):
+    """显示详细的错误信息"""
+    progress_queue.put(("error", detailed_message))
 
 def poll_queue():
     try:
@@ -739,6 +1020,8 @@ def start_running_ui():
     progress_bar["value"] = 0
     progress_var.set(0)
     status_var.set("执行中...")
+    # 添加视觉反馈：短暂高亮进度条
+    progress_bar.configure(style="Modern.Horizontal.TProgressbar")
 
 def finish_running_ui():
     for w in controls_to_toggle:
@@ -747,8 +1030,14 @@ def finish_running_ui():
         except Exception:
             pass
     cancel_btn.grid_remove()
+    progress_bar.grid_remove()
     status_var.set("完成")
     save_settings()
+    # 添加完成动画效果
+    root.update()
+    # 短暂显示成功状态
+    status_var.set("操作已成功完成")
+    root.after(2000, lambda: status_var.set("就绪"))
 
 def do_split_with_progress(input_file: str, output_file: str, ranges):
     reader = PdfReader(input_file)
@@ -1086,11 +1375,19 @@ def do_epub_convert_with_progress(epub_path: str, pdf_path: str, paper_size: str
         error_details = traceback.format_exc()
         post_error(f"转换过程中发生意外错误：\n{final_e}\n\n详细信息：\n{error_details}\n\n请检查文件或尝试其他转换方式。")
 
-# ================= 界面部分 =================
+# 主窗口初始化
 root = tk.Tk()
 root.title("PDF 工具箱：拆分 / 合并 / 预览")
-root.geometry("750x560")
-root.minsize(800, 520)
+root.geometry("1100x860")
+root.minsize(1000, 520)
+root.maxsize(1200, 900)
+
+# 设置窗口图标（如果有）
+try:
+    # 这里可以添加图标设置代码
+    pass
+except Exception:
+    pass
 
 # 主题样式
 style = ttk.Style()
@@ -1102,8 +1399,149 @@ try:
 except Exception:
     pass
 
+# 现代化颜色方案
+COLORS = {
+    "light": {
+        "bg": "#f5f5f5",
+        "fg": "#1a1a1a",
+        "subbg": "#ffffff",
+        "accent": "#0078d4",
+        "accent_hover": "#005a9e",
+        "border": "#d0d0d0",
+        "text_disabled": "#8a8d91",
+        "success": "#107c10",
+        "warning": "#ffb900",
+        "error": "#d13438",
+        "header": "#ffffff",
+        "shadow": "#e0e0e0",
+        "hover": "#f0f0f0"
+    },
+    "dark": {
+        "bg": "#1e1e1e",
+        "fg": "#e1e1e1",
+        "subbg": "#252526",
+        "accent": "#0e639c",
+        "accent_hover": "#1177bb",
+        "border": "#3e3e42",
+        "text_disabled": "#6a6d70",
+        "success": "#107c10",
+        "warning": "#d83b01",
+        "error": "#e81123",
+        "header": "#2d2d30",
+        "shadow": "#1a1a1a",
+        "hover": "#2a2d2e"
+    }
+}
+
+# 现代化样式配置
+def configure_modern_styles():
+    """配置现代化的UI样式"""
+    # 通用样式设置
+    style.configure("Modern.TFrame", padding=12, borderwidth=0)
+    style.configure("Modern.TLabelframe", padding=14, borderwidth=1, relief="solid")
+    style.configure("Modern.TLabelframe.Label", font=("Segoe UI", 11, "bold"), padding=(0, 0, 0, 10))
+    
+    # 按钮样式
+    style.configure("Modern.TButton", 
+                    padding=12, 
+                    font=("Segoe UI", 12, "normal"),
+                    borderwidth=1,
+                    relief="solid",
+                    foreground="#1a1a1a",
+                    background="#ffffff")
+    
+    style.map(
+        "Modern.TButton",
+        foreground=[("disabled", COLORS["light"]["text_disabled"]),
+                   ("!disabled", "#1a1a1a")],
+        background=[("active", COLORS["light"]["hover"]),
+                    ("disabled", "#f0f0f0"),
+                    ("!active", "#ffffff")],
+        bordercolor=[("active", COLORS["light"]["accent"]),
+                     ("!active", COLORS["light"]["border"])]
+    )
+    
+    # 强调按钮样式
+    style.configure("Modern.Accent.TButton", 
+                    padding=12, 
+                    font=("Segoe UI", 12, "bold"),
+                    borderwidth=0,
+                    relief="flat",
+                    foreground="#000000",
+                    background=COLORS["light"]["accent"])
+    
+    style.map(
+        "Modern.Accent.TButton",
+        foreground=[("disabled", "#666666"),
+                   ("!disabled", "#000000")],
+        background=[("active", COLORS["light"]["accent_hover"]),
+                    ("disabled", "#8cb0d2"),
+                    ("!active", COLORS["light"]["accent"])]
+    )
+    
+    # 输入框样式
+    style.configure("Modern.TEntry", 
+                    padding=10, 
+                    font=("Segoe UI", 11, "normal"),
+                    borderwidth=1,
+                    relief="solid",
+                    fieldbackground="#ffffff",
+                    foreground="#1a1a1a")
+    
+    style.map("Modern.TEntry",
+              bordercolor=[("focus", COLORS["light"]["accent"]),
+                           ("!focus", COLORS["light"]["border"])],
+              foreground=[("disabled", COLORS["light"]["text_disabled"]),
+                          ("!disabled", "#1a1a1a")])
+    
+    # 标签样式
+    style.configure("Modern.TLabel", 
+                    font=("Segoe UI", 11, "normal"),
+                    padding=6,
+                    foreground="#1a1a1a",
+                    background="#f5f5f5")
+    
+    # 进度条样式
+    style.configure("Modern.Horizontal.TProgressbar", 
+                    thickness=10,
+                    troughcolor="#e1e4e8",
+                    background=COLORS["light"]["accent"])
+    
+    # 分隔线样式
+    style.configure("Modern.TSeparator", 
+                    background=COLORS["light"]["border"])
+    
+    # 下拉框样式
+    style.configure("Modern.TCombobox", 
+                    padding=10, 
+                    font=("Segoe UI", 11),
+                    borderwidth=1,
+                    relief="solid",
+                    fieldbackground="#ffffff")
+    
+    style.map("Modern.TCombobox",
+              bordercolor=[("focus", COLORS["light"]["accent"]),
+                           ("!focus", COLORS["light"]["border"])])
+    
+    # 菜单按钮样式
+    style.configure("Modern.TMenubutton", 
+                    padding=10, 
+                    font=("Segoe UI", 11),
+                    borderwidth=1,
+                    relief="solid",
+                    background="#ffffff")
+    
+    style.map("Modern.TMenubutton",
+              background=[("active", COLORS["light"]["hover"]),
+                          ("!active", "#ffffff")],
+              bordercolor=[("active", COLORS["light"]["accent"]),
+                           ("!active", COLORS["light"]["border"])])
+
+# 应用现代化样式
+configure_modern_styles()
+
 # 主容器
-container = ttk.Frame(root, padding=12)
+container = ttk.Frame(root, padding=12, style="Modern.TFrame")
 container.grid(row=0, column=0, sticky="nsew")
 root.columnconfigure(0, weight=1)
 root.rowconfigure(0, weight=1)
@@ -1113,33 +1551,38 @@ container.columnconfigure(1, weight=1)
 theme_dark_var = tk.BooleanVar(value=False)
 
 # 文件区域
-files_frame = ttk.LabelFrame(container, text="文件")
+files_frame = ttk.LabelFrame(container, text="文件", style="Modern.TLabelframe")
 files_frame.grid(row=0, column=0, columnspan=3, sticky="ew", padx=4, pady=(0,8))
 for c in range(3):
     files_frame.columnconfigure(c, weight=1 if c == 1 else 0)
 
-ttk.Label(files_frame, text="输入 PDF 文件").grid(row=0, column=0, sticky="w", padx=8, pady=6)
-input_entry = ttk.Entry(files_frame)
+ttk.Label(files_frame, text="输入 PDF 文件", style="Modern.TLabel").grid(row=0, column=0, sticky="w", padx=8, pady=6)
+input_entry = ttk.Entry(files_frame, style="Modern.TEntry")
 input_entry.grid(row=0, column=1, sticky="ew", padx=4)
-ttk.Button(files_frame, text="浏览...", command=select_input_file, width=10).grid(row=0, column=2, padx=8)
+ttk.Button(files_frame, text="浏览...", command=select_input_file, width=10, style="Modern.TButton").grid(row=0, column=2, padx=8)
 
-ttk.Label(files_frame, text="输出 PDF 文件").grid(row=1, column=0, sticky="w", padx=8, pady=6)
-output_entry = ttk.Entry(files_frame)
+ttk.Label(files_frame, text="输出 PDF 文件", style="Modern.TLabel").grid(row=1, column=0, sticky="w", padx=8, pady=6)
+output_entry = ttk.Entry(files_frame, style="Modern.TEntry")
 output_entry.grid(row=1, column=1, sticky="ew", padx=4)
-ttk.Button(files_frame, text="浏览...", command=select_output_file, width=10).grid(row=1, column=2, padx=8)
+ttk.Button(files_frame, text="浏览...", command=select_output_file, width=10, style="Modern.TButton").grid(row=1, column=2, padx=8)
 
 # 页数信息
 pages_var = tk.StringVar(value="总页数：-")
-ttk.Label(files_frame, textvariable=pages_var, foreground="#666").grid(row=2, column=1, sticky="w", padx=4, pady=(0,6))
+ttk.Label(files_frame, textvariable=pages_var, foreground="#666666", style="Modern.TLabel").grid(row=2, column=1, sticky="w", padx=4, pady=(0,6))
+
+# 预览按钮
+preview_btn = ttk.Button(files_frame, text="预览 PDF", command=lambda: open_pdf_previewer(input_entry.get().strip()), width=12, style="Modern.TButton")
+preview_btn.grid(row=2, column=2, padx=8, pady=4)
+preview_btn.configure(state="disabled")  # 初始禁用，选择文件后启用
 
 # 拆分区域
-split_frame = ttk.LabelFrame(container, text="拆分")
+split_frame = ttk.LabelFrame(container, text="拆分", style="Modern.TLabelframe")
 split_frame.grid(row=1, column=0, columnspan=3, sticky="ew", padx=4, pady=4)
 split_frame.columnconfigure(1, weight=1)
 
-ttk.Label(split_frame, text="页码范围").grid(row=0, column=0, sticky="w", padx=8, pady=6)
+ttk.Label(split_frame, text="页码范围", style="Modern.TLabel").grid(row=0, column=0, sticky="w", padx=8, pady=6)
 RANGES_PLACEHOLDER = "例如：1-3,5,7-9（支持中文逗号）"
-ranges_entry = ttk.Entry(split_frame)
+ranges_entry = ttk.Entry(split_frame, style="Modern.TEntry")
 ranges_entry.grid(row=0, column=1, sticky="ew", padx=4)
 
 def _on_ranges_focus_in(event):
@@ -1154,25 +1597,41 @@ ranges_entry.insert(0, RANGES_PLACEHOLDER)
 ranges_entry.bind("<FocusIn>", _on_ranges_focus_in)
 ranges_entry.bind("<FocusOut>", _on_ranges_focus_out)
 
-ttk.Button(split_frame, text="预览拆分结果", command=run_preview, width=16, style="Accent.TButton").grid(row=0, column=2, padx=8)
-ttk.Separator(split_frame).grid(row=1, column=0, columnspan=3, sticky="ew", padx=8, pady=4)
-ttk.Button(split_frame, text="按范围拆分", command=run_split, width=18, style="Accent.TButton").grid(row=2, column=1, sticky="w", padx=4, pady=6)
-ttk.Button(split_frame, text="拆成单页", command=run_split_each, width=18).grid(row=2, column=1, sticky="e", padx=4, pady=6)
+# 预览拆分结果按钮
+preview_split_btn = ttk.Button(split_frame, text="预览拆分结果", command=run_preview, width=16, style="Modern.Accent.TButton")
+preview_split_btn.grid(row=0, column=2, padx=8, pady=4)
+
+ttk.Separator(split_frame, style="Modern.TSeparator").grid(row=1, column=0, columnspan=3, sticky="ew", padx=8, pady=4)
+
+# 按范围拆分按钮
+split_range_btn = ttk.Button(split_frame, text="按范围拆分", command=run_split, width=18, style="Modern.Accent.TButton")
+split_range_btn.grid(row=2, column=1, sticky="w", padx=4, pady=6)
+
+# 拆成单页按钮
+split_each_btn = ttk.Button(split_frame, text="拆成单页", command=run_split_each, width=18, style="Modern.TButton")
+split_each_btn.grid(row=2, column=1, sticky="e", padx=4, pady=6)
 
 # 合并区域
-merge_frame = ttk.LabelFrame(container, text="合并")
+merge_frame = ttk.LabelFrame(container, text="合并", style="Modern.TLabelframe")
 merge_frame.grid(row=2, column=0, columnspan=3, sticky="ew", padx=4, pady=4)
-ttk.Button(merge_frame, text="合并 PDF", command=run_merge, width=18, style="Accent.TButton").grid(row=0, column=0, padx=8, pady=6)
-ttk.Button(merge_frame, text="打开输出目录", command=open_output_dir, width=18).grid(row=0, column=1, padx=8, pady=6)
+merge_frame.columnconfigure(1, weight=1)
+
+# 合并 PDF 按钮
+merge_btn = ttk.Button(merge_frame, text="合并 PDF", command=run_merge, width=18, style="Modern.Accent.TButton")
+merge_btn.grid(row=0, column=0, padx=8, pady=6)
+
+# 打开输出目录按钮
+open_output_btn = ttk.Button(merge_frame, text="打开输出目录", command=open_output_dir, width=18, style="Modern.TButton")
+open_output_btn.grid(row=0, column=1, padx=8, pady=6, sticky="w")
 
 # EPUB 转 PDF 区域
-epub_frame = ttk.LabelFrame(container, text="EPUB 转 PDF")
+epub_frame = ttk.LabelFrame(container, text="EPUB 转 PDF", style="Modern.TLabelframe")
 epub_frame.grid(row=3, column=0, columnspan=3, sticky="ew", padx=4, pady=4)
 for c in range(3):
     epub_frame.columnconfigure(c, weight=1 if c == 1 else 0)
 
-ttk.Label(epub_frame, text="输入 EPUB 文件").grid(row=0, column=0, sticky="w", padx=8, pady=6)
-epub_input_entry = ttk.Entry(epub_frame)
+ttk.Label(epub_frame, text="输入 EPUB 文件", style="Modern.TLabel").grid(row=0, column=0, sticky="w", padx=8, pady=6)
+epub_input_entry = ttk.Entry(epub_frame, style="Modern.TEntry")
 epub_input_entry.grid(row=0, column=1, sticky="ew", padx=4)
 
 def select_epub_input():
@@ -1192,10 +1651,11 @@ def select_epub_input():
         pass
     save_settings()
 
-ttk.Button(epub_frame, text="浏览...", command=select_epub_input, width=10).grid(row=0, column=2, padx=8)
+epub_browse_btn = ttk.Button(epub_frame, text="浏览...", command=select_epub_input, width=10, style="Modern.TButton")
+epub_browse_btn.grid(row=0, column=2, padx=8)
 
-ttk.Label(epub_frame, text="输出 PDF 文件").grid(row=1, column=0, sticky="w", padx=8, pady=6)
-epub_output_entry = ttk.Entry(epub_frame)
+ttk.Label(epub_frame, text="输出 PDF 文件", style="Modern.TLabel").grid(row=1, column=0, sticky="w", padx=8, pady=6)
+epub_output_entry = ttk.Entry(epub_frame, style="Modern.TEntry")
 epub_output_entry.grid(row=1, column=1, sticky="ew", padx=4)
 
 def select_epub_output():
@@ -1206,13 +1666,49 @@ def select_epub_output():
     epub_output_entry.insert(0, fname)
     save_settings()
 
-ttk.Button(epub_frame, text="浏览...", command=select_epub_output, width=10).grid(row=1, column=2, padx=8)
+epub_output_browse_btn = ttk.Button(epub_frame, text="浏览...", command=select_epub_output, width=10, style="Modern.TButton")
+epub_output_browse_btn.grid(row=1, column=2, padx=8)
 
-ttk.Label(epub_frame, text="纸张").grid(row=2, column=0, sticky="w", padx=8, pady=6)
+ttk.Label(epub_frame, text="纸张", style="Modern.TLabel").grid(row=2, column=0, sticky="w", padx=8, pady=6)
 epub_paper_var = tk.StringVar(value="a4")
 epub_paper_combo = ttk.Combobox(epub_frame, textvariable=epub_paper_var, state="readonly", width=12,
-                                values=("a4", "a5", "letter", "legal"))
+                            values=("a4", "a5", "letter", "legal"), style="Modern.TCombobox")
 epub_paper_combo.grid(row=2, column=1, sticky="w", padx=4)
+
+# 响应式布局调整
+def on_window_resize(event):
+    """窗口大小变化时的响应式布局调整"""
+    window_width = event.width
+    
+    # 根据窗口宽度调整组件布局
+    if window_width < 900:
+        # 窄窗口布局
+        try:
+            files_frame.grid(row=0, column=0, columnspan=3, sticky="ew", padx=4, pady=(0,8))
+            split_frame.grid(row=1, column=0, columnspan=3, sticky="ew", padx=4, pady=4)
+            merge_frame.grid(row=2, column=0, columnspan=3, sticky="ew", padx=4, pady=4)
+            epub_frame.grid(row=3, column=0, columnspan=3, sticky="ew", padx=4, pady=4)
+            
+            # 确保所有列都有适当的权重
+            for frame in [files_frame, split_frame, merge_frame, epub_frame]:
+                try:
+                    frame.columnconfigure(1, weight=1)
+                except Exception:
+                    pass
+        except Exception:
+            pass
+    else:
+        # 宽窗口布局
+        try:
+            files_frame.grid(row=0, column=0, columnspan=3, sticky="ew", padx=4, pady=(0,8))
+            split_frame.grid(row=1, column=0, columnspan=3, sticky="ew", padx=4, pady=4)
+            merge_frame.grid(row=2, column=0, columnspan=3, sticky="ew", padx=4, pady=4)
+            epub_frame.grid(row=3, column=0, columnspan=3, sticky="ew", padx=4, pady=4)
+        except Exception:
+            pass
+
+# 绑定窗口大小变化事件
+root.bind("<Configure>", on_window_resize)
 
 def run_epub_convert():
     epub_in = epub_input_entry.get().strip()
@@ -1231,11 +1727,13 @@ def run_epub_convert():
     start_running_ui()
     threading.Thread(target=task, daemon=True).start()
 
-ttk.Button(epub_frame, text="开始转换", command=run_epub_convert, width=18, style="Accent.TButton").grid(row=2, column=2, padx=8)
+# 开始转换按钮
+epub_convert_btn = ttk.Button(epub_frame, text="开始转换", command=run_epub_convert, width=18, style="Modern.Accent.TButton")
+epub_convert_btn.grid(row=2, column=2, padx=8)
 
 # 状态栏
 status_var = tk.StringVar(value="就绪")
-status_bar = ttk.Label(root, textvariable=status_var, anchor="w", padding=(10,4))
+status_bar = ttk.Label(root, textvariable=status_var, anchor="w", padding=(10,6), font=("Segoe UI", 9))
 status_bar.grid(row=3, column=0, sticky="ew")
 
 # 记录窗口默认背景色，便于浅色主题恢复
@@ -1246,36 +1744,36 @@ except Exception:
 
 # 进度与取消
 progress_var = tk.IntVar(value=0)
-progress_bar = ttk.Progressbar(root, orient="horizontal", mode="determinate", maximum=100, variable=progress_var, length=240)
+progress_bar = ttk.Progressbar(root, orient="horizontal", mode="determinate", maximum=100, variable=progress_var, length=240, style="Modern.Horizontal.TProgressbar")
 progress_bar.grid(row=2, column=0, sticky="ew", padx=12)
 progress_bar.grid_remove()
-cancel_btn = ttk.Button(root, text="取消运行", command=on_cancel, width=12)
+cancel_btn = ttk.Button(root, text="取消运行", command=on_cancel, width=12, style="Modern.TButton")
 cancel_btn.grid(row=1, column=0, sticky="e", padx=12)
 cancel_btn.grid_remove()
 
 # 顶部工具栏（主题切换、范围助手）
-toolbar = ttk.Frame(root, padding=(12,4))
+toolbar = ttk.Frame(root, padding=(12,6), style="Modern.TFrame")
 toolbar.grid(row=1, column=0, sticky="ew")
 toolbar.columnconfigure(10, weight=1)
 
-ttk.Label(toolbar, text="范围助手:").grid(row=0, column=0, padx=(0,6))
-ttk.Button(toolbar, text="每N页拆分", command=helper_every_n_pages).grid(row=0, column=1, padx=4)
-ttk.Button(toolbar, text="均分为K份", command=helper_equal_k_parts).grid(row=0, column=2, padx=4)
-ttk.Button(toolbar, text="清空范围", command=clear_ranges).grid(row=0, column=3, padx=4)
+ttk.Label(toolbar, text="范围助手:", style="Modern.TLabel").grid(row=0, column=0, padx=(0,6))
+ttk.Button(toolbar, text="每N页拆分", command=helper_every_n_pages, style="Modern.TButton").grid(row=0, column=1, padx=4)
+ttk.Button(toolbar, text="均分为K份", command=helper_equal_k_parts, style="Modern.TButton").grid(row=0, column=2, padx=4)
+ttk.Button(toolbar, text="清空范围", command=clear_ranges, style="Modern.TButton").grid(row=0, column=3, padx=4)
 
 # 模板输入
-ttk.Label(toolbar, text="命名模板").grid(row=0, column=4, padx=(12,4))
+ttk.Label(toolbar, text="命名模板", style="Modern.TLabel").grid(row=0, column=4, padx=(12,4))
 name_template_var = tk.StringVar(value="{name}_{start}-{end}.pdf")
-name_template_entry = ttk.Entry(toolbar, textvariable=name_template_var, width=26)
+name_template_entry = ttk.Entry(toolbar, textvariable=name_template_var, width=26, style="Modern.TEntry")
 name_template_entry.grid(row=0, column=5, padx=2)
 
 # 语言切换与最近
 language_var = tk.StringVar(value=LANG)
-ttk.Label(toolbar, text=T("language")).grid(row=0, column=8, padx=(12,2))
-ttk.Button(toolbar, text=T("zh"), command=lambda: set_language("zh"), width=4).grid(row=0, column=9, padx=2)
-ttk.Button(toolbar, text=T("en"), command=lambda: set_language("en"), width=4).grid(row=0, column=10, padx=2)
+ttk.Label(toolbar, text=T("language"), style="Modern.TLabel").grid(row=0, column=8, padx=(12,2))
+ttk.Button(toolbar, text=T("zh"), command=lambda: set_language("zh"), width=4, style="Modern.TButton").grid(row=0, column=9, padx=2)
+ttk.Button(toolbar, text=T("en"), command=lambda: set_language("en"), width=4, style="Modern.TButton").grid(row=0, column=10, padx=2)
 
-recent_btn = ttk.Menubutton(toolbar, text=T("recent"))
+recent_btn = ttk.Menubutton(toolbar, text=T("recent"), style="Modern.TMenubutton")
 recent_menu = tk.Menu(recent_btn, tearoff=0)
 recent_btn["menu"] = recent_menu
 recent_btn.grid(row=0, column=11, padx=(12,2))
@@ -1304,6 +1802,45 @@ SETTINGS_PATH = os.path.join(os.path.dirname(__file__), "settings.json")
 # 启动轮询与加载设置
 root.after(150, poll_queue)
 load_settings()
+
+# 响应式布局处理
+def on_window_resize(event):
+    """处理窗口大小变化事件"""
+    window_width = event.width
+    window_height = event.height
+    
+    # 根据窗口宽度调整元素布局
+    if window_width < 850:
+        # 窄窗口布局
+        container.columnconfigure(2, weight=0)
+        # 调整工具栏布局
+        toolbar.columnconfigure(10, weight=1)
+        
+        # 调整输入框宽度
+        input_entry.configure(width=max(30, window_width // 20))
+        output_entry.configure(width=max(30, window_width // 20))
+        ranges_entry.configure(width=max(25, window_width // 25))
+    else:
+        # 宽窗口布局
+        container.columnconfigure(2, weight=0)
+        
+        # 调整输入框宽度
+        input_entry.configure(width=max(40, window_width // 15))
+        output_entry.configure(width=max(40, window_width // 15))
+        ranges_entry.configure(width=max(30, window_width // 20))
+    
+    # 确保状态栏和进度条始终可见
+    status_bar.grid(row=3, column=0, sticky="ew")
+    if progress_bar.winfo_ismapped():
+        progress_bar.grid(row=2, column=0, sticky="ew", padx=12)
+    if cancel_btn.winfo_ismapped():
+        cancel_btn.grid(row=1, column=0, sticky="e", padx=12)
+    
+    # 调整主容器内边距
+    container.configure(padding=min(12, window_width // 60))
+
+# 绑定窗口大小变化事件
+root.bind("<Configure>", on_window_resize)
 
 # 拖拽到输入框（可选）
 if DND_AVAILABLE:

@@ -108,7 +108,11 @@ imported by:
   <a target="code" href="///D:/MyWork/project/pdf-split/split_pdf_gui.py" type="text/plain"><tt>split_pdf_gui.py</tt></a>
 <span class="moduletype">Script</span>  <div class="import">
 imports:
-    <a href="#PyPDF2">PyPDF2</a>
+    <a href="#PIL">PIL</a>
+ &#8226;   <a href="#PIL.Image">PIL.Image</a>
+ &#8226;   <a href="#PIL.ImageDraw">PIL.ImageDraw</a>
+ &#8226;   <a href="#PIL.ImageTk">PIL.ImageTk</a>
+ &#8226;   <a href="#PyPDF2">PyPDF2</a>
  &#8226;   <a href="#_collections_abc">_collections_abc</a>
  &#8226;   <a href="#_weakrefset">_weakrefset</a>
  &#8226;   <a href="#abc">abc</a>
@@ -241,6 +245,7 @@ imports:
  &#8226;   <a href="#encodings.uu_codec">encodings.uu_codec</a>
  &#8226;   <a href="#encodings.zlib_codec">encodings.zlib_codec</a>
  &#8226;   <a href="#enum">enum</a>
+ &#8226;   <a href="#fitz">fitz</a>
  &#8226;   <a href="#functools">functools</a>
  &#8226;   <a href="#genericpath">genericpath</a>
  &#8226;   <a href="#heapq">heapq</a>
@@ -253,6 +258,7 @@ imports:
  &#8226;   <a href="#ntpath">ntpath</a>
  &#8226;   <a href="#operator">operator</a>
  &#8226;   <a href="#os">os</a>
+ &#8226;   <a href="#pdf_split_task">pdf_split_task</a>
  &#8226;   <a href="#platform">platform</a>
  &#8226;   <a href="#posixpath">posixpath</a>
  &#8226;   <a href="#pyi_rth__tkinter.py">pyi_rth__tkinter.py</a>
@@ -281,6 +287,7 @@ imports:
  &#8226;   <a href="#stat">stat</a>
  &#8226;   <a href="#subprocess">subprocess</a>
  &#8226;   <a href="#sys">sys</a>
+ &#8226;   <a href="#task_context">task_context</a>
  &#8226;   <a href="#threading">threading</a>
  &#8226;   <a href="#tkinter">tkinter</a>
  &#8226;   <a href="#tkinter.filedialog">tkinter.filedialog</a>
@@ -434,15 +441,20 @@ imports:
  &#8226;   <a href="#PIL.ImageChops">PIL.ImageChops</a>
  &#8226;   <a href="#PIL.ImageCms">PIL.ImageCms</a>
  &#8226;   <a href="#PIL.ImageColor">PIL.ImageColor</a>
+ &#8226;   <a href="#PIL.ImageDraw">PIL.ImageDraw</a>
+ &#8226;   <a href="#PIL.ImageDraw2">PIL.ImageDraw2</a>
  &#8226;   <a href="#PIL.ImageFile">PIL.ImageFile</a>
  &#8226;   <a href="#PIL.ImageFilter">PIL.ImageFilter</a>
+ &#8226;   <a href="#PIL.ImageFont">PIL.ImageFont</a>
  &#8226;   <a href="#PIL.ImageMath">PIL.ImageMath</a>
  &#8226;   <a href="#PIL.ImageMode">PIL.ImageMode</a>
  &#8226;   <a href="#PIL.ImageOps">PIL.ImageOps</a>
  &#8226;   <a href="#PIL.ImagePalette">PIL.ImagePalette</a>
+ &#8226;   <a href="#PIL.ImagePath">PIL.ImagePath</a>
  &#8226;   <a href="#PIL.ImageQt">PIL.ImageQt</a>
  &#8226;   <a href="#PIL.ImageSequence">PIL.ImageSequence</a>
  &#8226;   <a href="#PIL.ImageShow">PIL.ImageShow</a>
+ &#8226;   <a href="#PIL.ImageText">PIL.ImageText</a>
  &#8226;   <a href="#PIL.ImageTk">PIL.ImageTk</a>
  &#8226;   <a href="#PIL.ImageWin">PIL.ImageWin</a>
  &#8226;   <a href="#PIL.Jpeg2KImagePlugin">PIL.Jpeg2KImagePlugin</a>
@@ -493,15 +505,20 @@ imported by:
  &#8226;   <a href="#PIL.ImageChops">PIL.ImageChops</a>
  &#8226;   <a href="#PIL.ImageCms">PIL.ImageCms</a>
  &#8226;   <a href="#PIL.ImageColor">PIL.ImageColor</a>
+ &#8226;   <a href="#PIL.ImageDraw">PIL.ImageDraw</a>
+ &#8226;   <a href="#PIL.ImageDraw2">PIL.ImageDraw2</a>
  &#8226;   <a href="#PIL.ImageFile">PIL.ImageFile</a>
  &#8226;   <a href="#PIL.ImageFilter">PIL.ImageFilter</a>
+ &#8226;   <a href="#PIL.ImageFont">PIL.ImageFont</a>
  &#8226;   <a href="#PIL.ImageMath">PIL.ImageMath</a>
  &#8226;   <a href="#PIL.ImageMode">PIL.ImageMode</a>
  &#8226;   <a href="#PIL.ImageOps">PIL.ImageOps</a>
  &#8226;   <a href="#PIL.ImagePalette">PIL.ImagePalette</a>
+ &#8226;   <a href="#PIL.ImagePath">PIL.ImagePath</a>
  &#8226;   <a href="#PIL.ImageQt">PIL.ImageQt</a>
  &#8226;   <a href="#PIL.ImageSequence">PIL.ImageSequence</a>
  &#8226;   <a href="#PIL.ImageShow">PIL.ImageShow</a>
+ &#8226;   <a href="#PIL.ImageText">PIL.ImageText</a>
  &#8226;   <a href="#PIL.ImageTk">PIL.ImageTk</a>
  &#8226;   <a href="#PIL.ImageWin">PIL.ImageWin</a>
  &#8226;   <a href="#PIL.ImtImagePlugin">PIL.ImtImagePlugin</a>
@@ -541,6 +558,7 @@ imported by:
  &#8226;   <a href="#PIL._deprecate">PIL._deprecate</a>
  &#8226;   <a href="#PIL._imaging">PIL._imaging</a>
  &#8226;   <a href="#PIL._imagingcms">PIL._imagingcms</a>
+ &#8226;   <a href="#PIL._imagingft">PIL._imagingft</a>
  &#8226;   <a href="#PIL._imagingmath">PIL._imagingmath</a>
  &#8226;   <a href="#PIL._imagingtk">PIL._imagingtk</a>
  &#8226;   <a href="#PIL._typing">PIL._typing</a>
@@ -549,8 +567,10 @@ imported by:
  &#8226;   <a href="#PIL._webp">PIL._webp</a>
  &#8226;   <a href="#PIL.features">PIL.features</a>
  &#8226;   <a href="#PyPDF2.filters">PyPDF2.filters</a>
+ &#8226;   <a href="#pymupdf">pymupdf</a>
  &#8226;   <a href="#reportlab.graphics.renderPM">reportlab.graphics.renderPM</a>
  &#8226;   <a href="#reportlab.lib.utils">reportlab.lib.utils</a>
+ &#8226;   <a href="#split_pdf_gui.py">split_pdf_gui.py</a>
 
   </div>
 
@@ -1193,11 +1213,15 @@ imported by:
  &#8226;   <a href="#PIL.ImageChops">PIL.ImageChops</a>
  &#8226;   <a href="#PIL.ImageCms">PIL.ImageCms</a>
  &#8226;   <a href="#PIL.ImageColor">PIL.ImageColor</a>
+ &#8226;   <a href="#PIL.ImageDraw">PIL.ImageDraw</a>
+ &#8226;   <a href="#PIL.ImageDraw2">PIL.ImageDraw2</a>
  &#8226;   <a href="#PIL.ImageFile">PIL.ImageFile</a>
  &#8226;   <a href="#PIL.ImageFilter">PIL.ImageFilter</a>
+ &#8226;   <a href="#PIL.ImageFont">PIL.ImageFont</a>
  &#8226;   <a href="#PIL.ImageMath">PIL.ImageMath</a>
  &#8226;   <a href="#PIL.ImageOps">PIL.ImageOps</a>
  &#8226;   <a href="#PIL.ImagePalette">PIL.ImagePalette</a>
+ &#8226;   <a href="#PIL.ImagePath">PIL.ImagePath</a>
  &#8226;   <a href="#PIL.ImageQt">PIL.ImageQt</a>
  &#8226;   <a href="#PIL.ImageSequence">PIL.ImageSequence</a>
  &#8226;   <a href="#PIL.ImageShow">PIL.ImageShow</a>
@@ -1233,8 +1257,10 @@ imported by:
  &#8226;   <a href="#PIL.XpmImagePlugin">PIL.XpmImagePlugin</a>
  &#8226;   <a href="#PIL.features">PIL.features</a>
  &#8226;   <a href="#PyPDF2.filters">PyPDF2.filters</a>
+ &#8226;   <a href="#pymupdf">pymupdf</a>
  &#8226;   <a href="#reportlab.graphics.renderPM">reportlab.graphics.renderPM</a>
  &#8226;   <a href="#reportlab.lib.utils">reportlab.lib.utils</a>
+ &#8226;   <a href="#split_pdf_gui.py">split_pdf_gui.py</a>
 
   </div>
 
@@ -1307,8 +1333,65 @@ imports:
 imported by:
     <a href="#PIL">PIL</a>
  &#8226;   <a href="#PIL.Image">PIL.Image</a>
+ &#8226;   <a href="#PIL.ImageDraw">PIL.ImageDraw</a>
+ &#8226;   <a href="#PIL.ImageDraw2">PIL.ImageDraw2</a>
  &#8226;   <a href="#PIL.ImageOps">PIL.ImageOps</a>
  &#8226;   <a href="#PIL.ImagePalette">PIL.ImagePalette</a>
+
+  </div>
+
+</div>
+
+<div class="node">
+  <a name="PIL.ImageDraw"></a>
+  <a target="code" href="///D:/MyWork/project/pdf-split/.venv/Lib/site-packages/PIL/ImageDraw.py" type="text/plain"><tt>PIL.ImageDraw</tt></a>
+<span class="moduletype">SourceModule</span>  <div class="import">
+imports:
+    <a href="#PIL">PIL</a>
+ &#8226;   <a href="#PIL.Image">PIL.Image</a>
+ &#8226;   <a href="#PIL.ImageColor">PIL.ImageColor</a>
+ &#8226;   <a href="#PIL.ImageDraw2">PIL.ImageDraw2</a>
+ &#8226;   <a href="#PIL.ImageFont">PIL.ImageFont</a>
+ &#8226;   <a href="#PIL.ImageText">PIL.ImageText</a>
+ &#8226;   <a href="#PIL._typing">PIL._typing</a>
+ &#8226;   <a href="#__future__">__future__</a>
+ &#8226;   <a href="#collections.abc">collections.abc</a>
+ &#8226;   <a href="#math">math</a>
+ &#8226;   <a href="#struct">struct</a>
+ &#8226;   <a href="#types">types</a>
+ &#8226;   <a href="#typing">typing</a>
+
+  </div>
+  <div class="import">
+imported by:
+    <a href="#PIL">PIL</a>
+ &#8226;   <a href="#PIL.ImageDraw2">PIL.ImageDraw2</a>
+ &#8226;   <a href="#split_pdf_gui.py">split_pdf_gui.py</a>
+
+  </div>
+
+</div>
+
+<div class="node">
+  <a name="PIL.ImageDraw2"></a>
+  <a target="code" href="///D:/MyWork/project/pdf-split/.venv/Lib/site-packages/PIL/ImageDraw2.py" type="text/plain"><tt>PIL.ImageDraw2</tt></a>
+<span class="moduletype">SourceModule</span>  <div class="import">
+imports:
+    <a href="#PIL">PIL</a>
+ &#8226;   <a href="#PIL.Image">PIL.Image</a>
+ &#8226;   <a href="#PIL.ImageColor">PIL.ImageColor</a>
+ &#8226;   <a href="#PIL.ImageDraw">PIL.ImageDraw</a>
+ &#8226;   <a href="#PIL.ImageFont">PIL.ImageFont</a>
+ &#8226;   <a href="#PIL.ImagePath">PIL.ImagePath</a>
+ &#8226;   <a href="#PIL._typing">PIL._typing</a>
+ &#8226;   <a href="#__future__">__future__</a>
+ &#8226;   <a href="#typing">typing</a>
+
+  </div>
+  <div class="import">
+imported by:
+    <a href="#PIL">PIL</a>
+ &#8226;   <a href="#PIL.ImageDraw">PIL.ImageDraw</a>
 
   </div>
 
@@ -1357,6 +1440,7 @@ imported by:
  &#8226;   <a href="#PIL.IcoImagePlugin">PIL.IcoImagePlugin</a>
  &#8226;   <a href="#PIL.ImImagePlugin">PIL.ImImagePlugin</a>
  &#8226;   <a href="#PIL.Image">PIL.Image</a>
+ &#8226;   <a href="#PIL.ImageFont">PIL.ImageFont</a>
  &#8226;   <a href="#PIL.ImageQt">PIL.ImageQt</a>
  &#8226;   <a href="#PIL.ImageTk">PIL.ImageTk</a>
  &#8226;   <a href="#PIL.ImtImagePlugin">PIL.ImtImagePlugin</a>
@@ -1412,6 +1496,41 @@ imports:
 imported by:
     <a href="#PIL">PIL</a>
  &#8226;   <a href="#PIL.Image">PIL.Image</a>
+
+  </div>
+
+</div>
+
+<div class="node">
+  <a name="PIL.ImageFont"></a>
+  <a target="code" href="///D:/MyWork/project/pdf-split/.venv/Lib/site-packages/PIL/ImageFont.py" type="text/plain"><tt>PIL.ImageFont</tt></a>
+<span class="moduletype">SourceModule</span>  <div class="import">
+imports:
+    <a href="#PIL">PIL</a>
+ &#8226;   <a href="#PIL.Image">PIL.Image</a>
+ &#8226;   <a href="#PIL.ImageFile">PIL.ImageFile</a>
+ &#8226;   <a href="#PIL._imaging">PIL._imaging</a>
+ &#8226;   <a href="#PIL._imagingft">PIL._imagingft</a>
+ &#8226;   <a href="#PIL._typing">PIL._typing</a>
+ &#8226;   <a href="#PIL._util">PIL._util</a>
+ &#8226;   <a href="#__future__">__future__</a>
+ &#8226;   <a href="#base64">base64</a>
+ &#8226;   <a href="#enum">enum</a>
+ &#8226;   <a href="#io">io</a>
+ &#8226;   <a href="#os">os</a>
+ &#8226;   <a href="#sys">sys</a>
+ &#8226;   <a href="#types">types</a>
+ &#8226;   <a href="#typing">typing</a>
+ &#8226;   <a href="#warnings">warnings</a>
+
+  </div>
+  <div class="import">
+imported by:
+    <a href="#PIL">PIL</a>
+ &#8226;   <a href="#PIL.ImageDraw">PIL.ImageDraw</a>
+ &#8226;   <a href="#PIL.ImageDraw2">PIL.ImageDraw2</a>
+ &#8226;   <a href="#PIL.ImageText">PIL.ImageText</a>
+ &#8226;   <a href="#PIL._imagingft">PIL._imagingft</a>
 
   </div>
 
@@ -1533,6 +1652,25 @@ imported by:
 </div>
 
 <div class="node">
+  <a name="PIL.ImagePath"></a>
+  <a target="code" href="///D:/MyWork/project/pdf-split/.venv/Lib/site-packages/PIL/ImagePath.py" type="text/plain"><tt>PIL.ImagePath</tt></a>
+<span class="moduletype">SourceModule</span>  <div class="import">
+imports:
+    <a href="#PIL">PIL</a>
+ &#8226;   <a href="#PIL.Image">PIL.Image</a>
+ &#8226;   <a href="#__future__">__future__</a>
+
+  </div>
+  <div class="import">
+imported by:
+    <a href="#PIL">PIL</a>
+ &#8226;   <a href="#PIL.ImageDraw2">PIL.ImageDraw2</a>
+
+  </div>
+
+</div>
+
+<div class="node">
   <a name="PIL.ImageQt"></a>
   <a target="code" href="///D:/MyWork/project/pdf-split/.venv/Lib/site-packages/PIL/ImageQt.py" type="text/plain"><tt>PIL.ImageQt</tt></a>
 <span class="moduletype">SourceModule</span>  <div class="import">
@@ -1607,6 +1745,26 @@ imported by:
 </div>
 
 <div class="node">
+  <a name="PIL.ImageText"></a>
+  <a target="code" href="///D:/MyWork/project/pdf-split/.venv/Lib/site-packages/PIL/ImageText.py" type="text/plain"><tt>PIL.ImageText</tt></a>
+<span class="moduletype">SourceModule</span>  <div class="import">
+imports:
+    <a href="#PIL">PIL</a>
+ &#8226;   <a href="#PIL.ImageFont">PIL.ImageFont</a>
+ &#8226;   <a href="#PIL._typing">PIL._typing</a>
+ &#8226;   <a href="#__future__">__future__</a>
+
+  </div>
+  <div class="import">
+imported by:
+    <a href="#PIL">PIL</a>
+ &#8226;   <a href="#PIL.ImageDraw">PIL.ImageDraw</a>
+
+  </div>
+
+</div>
+
+<div class="node">
   <a name="PIL.ImageTk"></a>
   <a target="code" href="///D:/MyWork/project/pdf-split/.venv/Lib/site-packages/PIL/ImageTk.py" type="text/plain"><tt>PIL.ImageTk</tt></a>
 <span class="moduletype">SourceModule</span>  <div class="import">
@@ -1625,6 +1783,7 @@ imports:
 imported by:
     <a href="#PIL">PIL</a>
  &#8226;   <a href="#PIL.SpiderImagePlugin">PIL.SpiderImagePlugin</a>
+ &#8226;   <a href="#split_pdf_gui.py">split_pdf_gui.py</a>
 
   </div>
 
@@ -2518,7 +2677,9 @@ imported by:
  &#8226;   <a href="#PIL.GifImagePlugin">PIL.GifImagePlugin</a>
  &#8226;   <a href="#PIL.Image">PIL.Image</a>
  &#8226;   <a href="#PIL.ImageFilter">PIL.ImageFilter</a>
+ &#8226;   <a href="#PIL.ImageFont">PIL.ImageFont</a>
  &#8226;   <a href="#PIL.PngImagePlugin">PIL.PngImagePlugin</a>
+ &#8226;   <a href="#PIL._imagingft">PIL._imagingft</a>
 
   </div>
 
@@ -2539,6 +2700,25 @@ imports:
 imported by:
     <a href="#PIL">PIL</a>
  &#8226;   <a href="#PIL.ImageCms">PIL.ImageCms</a>
+
+  </div>
+
+</div>
+
+<div class="node">
+  <a name="PIL._imagingft"></a>
+  <tt>PIL._imagingft</tt> <span class="moduletype"><tt>d:\MyWork\project\pdf-split\.venv\Lib\site-packages\PIL\_imagingft.cp312-win_amd64.pyd</tt></span>  <div class="import">
+imports:
+    <a href="#PIL">PIL</a>
+ &#8226;   <a href="#PIL.ImageFont">PIL.ImageFont</a>
+ &#8226;   <a href="#PIL._imaging">PIL._imaging</a>
+ &#8226;   <a href="#collections.abc">collections.abc</a>
+ &#8226;   <a href="#typing">typing</a>
+
+  </div>
+  <div class="import">
+imported by:
+    <a href="#PIL.ImageFont">PIL.ImageFont</a>
 
   </div>
 
@@ -2599,8 +2779,12 @@ imported by:
     <a href="#PIL.GifImagePlugin">PIL.GifImagePlugin</a>
  &#8226;   <a href="#PIL.Image">PIL.Image</a>
  &#8226;   <a href="#PIL.ImageCms">PIL.ImageCms</a>
+ &#8226;   <a href="#PIL.ImageDraw">PIL.ImageDraw</a>
+ &#8226;   <a href="#PIL.ImageDraw2">PIL.ImageDraw2</a>
  &#8226;   <a href="#PIL.ImageFile">PIL.ImageFile</a>
  &#8226;   <a href="#PIL.ImageFilter">PIL.ImageFilter</a>
+ &#8226;   <a href="#PIL.ImageFont">PIL.ImageFont</a>
+ &#8226;   <a href="#PIL.ImageText">PIL.ImageText</a>
  &#8226;   <a href="#PIL.ImageTk">PIL.ImageTk</a>
  &#8226;   <a href="#PIL.MpegImagePlugin">PIL.MpegImagePlugin</a>
  &#8226;   <a href="#PIL.TiffImagePlugin">PIL.TiffImagePlugin</a>
@@ -2632,6 +2816,7 @@ imported by:
  &#8226;   <a href="#PIL.Image">PIL.Image</a>
  &#8226;   <a href="#PIL.ImageCms">PIL.ImageCms</a>
  &#8226;   <a href="#PIL.ImageFile">PIL.ImageFile</a>
+ &#8226;   <a href="#PIL.ImageFont">PIL.ImageFont</a>
  &#8226;   <a href="#PIL.ImageQt">PIL.ImageQt</a>
  &#8226;   <a href="#PIL.MpoImagePlugin">PIL.MpoImagePlugin</a>
  &#8226;   <a href="#PIL.PngImagePlugin">PIL.PngImagePlugin</a>
@@ -2739,6 +2924,7 @@ imported by:
  &#8226;   <a href="#PyPDF2.papersizes">PyPDF2.papersizes</a>
  &#8226;   <a href="#PyPDF2.types">PyPDF2.types</a>
  &#8226;   <a href="#PyPDF2.xmp">PyPDF2.xmp</a>
+ &#8226;   <a href="#pdf_split_task">pdf_split_task</a>
  &#8226;   <a href="#split_pdf_gui.py">split_pdf_gui.py</a>
 
   </div>
@@ -3546,6 +3732,18 @@ imported by:
 </div>
 
 <div class="node">
+  <a name="__builtin__"></a>
+  <a target="code" href="" type="text/plain"><tt>__builtin__</tt></a>
+<span class="moduletype">MissingModule</span>  <div class="import">
+imported by:
+    <a href="#pymupdf.extra">pymupdf.extra</a>
+ &#8226;   <a href="#pymupdf.mupdf">pymupdf.mupdf</a>
+
+  </div>
+
+</div>
+
+<div class="node">
   <a name="__future__"></a>
   <a target="code" href="///C:/Python312/Lib/__future__.py" type="text/plain"><tt>__future__</tt></a>
 <span class="moduletype">SourceModule</span>  <div class="import">
@@ -3577,15 +3775,20 @@ imported by:
  &#8226;   <a href="#PIL.ImageChops">PIL.ImageChops</a>
  &#8226;   <a href="#PIL.ImageCms">PIL.ImageCms</a>
  &#8226;   <a href="#PIL.ImageColor">PIL.ImageColor</a>
+ &#8226;   <a href="#PIL.ImageDraw">PIL.ImageDraw</a>
+ &#8226;   <a href="#PIL.ImageDraw2">PIL.ImageDraw2</a>
  &#8226;   <a href="#PIL.ImageFile">PIL.ImageFile</a>
  &#8226;   <a href="#PIL.ImageFilter">PIL.ImageFilter</a>
+ &#8226;   <a href="#PIL.ImageFont">PIL.ImageFont</a>
  &#8226;   <a href="#PIL.ImageMath">PIL.ImageMath</a>
  &#8226;   <a href="#PIL.ImageMode">PIL.ImageMode</a>
  &#8226;   <a href="#PIL.ImageOps">PIL.ImageOps</a>
  &#8226;   <a href="#PIL.ImagePalette">PIL.ImagePalette</a>
+ &#8226;   <a href="#PIL.ImagePath">PIL.ImagePath</a>
  &#8226;   <a href="#PIL.ImageQt">PIL.ImageQt</a>
  &#8226;   <a href="#PIL.ImageSequence">PIL.ImageSequence</a>
  &#8226;   <a href="#PIL.ImageShow">PIL.ImageShow</a>
+ &#8226;   <a href="#PIL.ImageText">PIL.ImageText</a>
  &#8226;   <a href="#PIL.ImageTk">PIL.ImageTk</a>
  &#8226;   <a href="#PIL.ImageWin">PIL.ImageWin</a>
  &#8226;   <a href="#PIL.ImtImagePlugin">PIL.ImtImagePlugin</a>
@@ -5902,6 +6105,7 @@ imported by:
     <a href="#PIL.Image">PIL.Image</a>
  &#8226;   <a href="#logging">logging</a>
  &#8226;   <a href="#multiprocessing.util">multiprocessing.util</a>
+ &#8226;   <a href="#pymupdf">pymupdf</a>
  &#8226;   <a href="#rlcompleter">rlcompleter</a>
  &#8226;   <a href="#site">site</a>
  &#8226;   <a href="#weakref">weakref</a>
@@ -5942,11 +6146,13 @@ imports:
   </div>
   <div class="import">
 imported by:
-    <a href="#email._encoded_words">email._encoded_words</a>
+    <a href="#PIL.ImageFont">PIL.ImageFont</a>
+ &#8226;   <a href="#email._encoded_words">email._encoded_words</a>
  &#8226;   <a href="#email.base64mime">email.base64mime</a>
  &#8226;   <a href="#email.encoders">email.encoders</a>
  &#8226;   <a href="#encodings.base64_codec">encodings.base64_codec</a>
  &#8226;   <a href="#http.server">http.server</a>
+ &#8226;   <a href="#pymupdf">pymupdf</a>
  &#8226;   <a href="#reportlab.graphics.renderSVG">reportlab.graphics.renderSVG</a>
  &#8226;   <a href="#reportlab.lib.utils">reportlab.lib.utils</a>
  &#8226;   <a href="#secrets">secrets</a>
@@ -5995,6 +6201,7 @@ imported by:
  &#8226;   <a href="#encodings.hex_codec">encodings.hex_codec</a>
  &#8226;   <a href="#encodings.uu_codec">encodings.uu_codec</a>
  &#8226;   <a href="#http.server">http.server</a>
+ &#8226;   <a href="#pymupdf">pymupdf</a>
  &#8226;   <a href="#quopri">quopri</a>
  &#8226;   <a href="#reportlab.lib.pdfencrypt">reportlab.lib.pdfencrypt</a>
  &#8226;   <a href="#reportlab.pdfbase.pdfdoc">reportlab.pdfbase.pdfdoc</a>
@@ -6052,6 +6259,8 @@ imported by:
  &#8226;   <a href="#lzma">lzma</a>
  &#8226;   <a href="#operator">operator</a>
  &#8226;   <a href="#pydoc">pydoc</a>
+ &#8226;   <a href="#pymupdf.extra">pymupdf.extra</a>
+ &#8226;   <a href="#pymupdf.mupdf">pymupdf.mupdf</a>
  &#8226;   <a href="#reportlab.lib.rl_safe_eval">reportlab.lib.rl_safe_eval</a>
  &#8226;   <a href="#reportlab.lib.utils">reportlab.lib.utils</a>
  &#8226;   <a href="#reprlib">reprlib</a>
@@ -6660,6 +6869,7 @@ imported by:
  &#8226;   <a href="#platform">platform</a>
  &#8226;   <a href="#pprint">pprint</a>
  &#8226;   <a href="#pydoc">pydoc</a>
+ &#8226;   <a href="#pymupdf">pymupdf</a>
  &#8226;   <a href="#queue">queue</a>
  &#8226;   <a href="#reportlab.pdfbase.pdfdoc">reportlab.pdfbase.pdfdoc</a>
  &#8226;   <a href="#reportlab.pdfbase.rl_codecs">reportlab.pdfbase.rl_codecs</a>
@@ -6709,6 +6919,7 @@ imports:
 imported by:
     <a href="#PIL.GimpGradientFile">PIL.GimpGradientFile</a>
  &#8226;   <a href="#PIL.Image">PIL.Image</a>
+ &#8226;   <a href="#PIL.ImageDraw">PIL.ImageDraw</a>
  &#8226;   <a href="#PIL.ImageFilter">PIL.ImageFilter</a>
  &#8226;   <a href="#PIL.ImageMath">PIL.ImageMath</a>
  &#8226;   <a href="#PIL.ImageOps">PIL.ImageOps</a>
@@ -6718,6 +6929,7 @@ imported by:
  &#8226;   <a href="#PIL.Jpeg2KImagePlugin">PIL.Jpeg2KImagePlugin</a>
  &#8226;   <a href="#PIL.PngImagePlugin">PIL.PngImagePlugin</a>
  &#8226;   <a href="#PIL.TiffImagePlugin">PIL.TiffImagePlugin</a>
+ &#8226;   <a href="#PIL._imagingft">PIL._imagingft</a>
  &#8226;   <a href="#PIL._typing">PIL._typing</a>
  &#8226;   <a href="#asyncio.base_events">asyncio.base_events</a>
  &#8226;   <a href="#asyncio.coroutines">asyncio.coroutines</a>
@@ -6728,6 +6940,7 @@ imported by:
  &#8226;   <a href="#logging">logging</a>
  &#8226;   <a href="#lxml.html">lxml.html</a>
  &#8226;   <a href="#lxml.html._setmixin">lxml.html._setmixin</a>
+ &#8226;   <a href="#pymupdf.table">pymupdf.table</a>
  &#8226;   <a href="#selectors">selectors</a>
  &#8226;   <a href="#setuptools">setuptools</a>
  &#8226;   <a href="#setuptools._distutils._modified">setuptools._distutils._modified</a>
@@ -7077,6 +7290,17 @@ imported by:
 </div>
 
 <div class="node">
+  <a name="cppyy"></a>
+  <a target="code" href="" type="text/plain"><tt>cppyy</tt></a>
+<span class="moduletype">MissingModule</span>  <div class="import">
+imported by:
+    <a href="#pymupdf">pymupdf</a>
+
+  </div>
+
+</div>
+
+<div class="node">
   <a name="cssselect"></a>
   <a target="code" href="" type="text/plain"><tt>cssselect</tt></a>
 <span class="moduletype">MissingModule</span>  <div class="import">
@@ -7204,8 +7428,10 @@ imported by:
     <a href="#PyPDF2._utils">PyPDF2._utils</a>
  &#8226;   <a href="#packaging._tokenizer">packaging._tokenizer</a>
  &#8226;   <a href="#pprint">pprint</a>
+ &#8226;   <a href="#pymupdf.table">pymupdf.table</a>
  &#8226;   <a href="#setuptools._vendor.packaging._tokenizer">setuptools._vendor.packaging._tokenizer</a>
  &#8226;   <a href="#setuptools._vendor.wheel.vendored.packaging._tokenizer">setuptools._vendor.wheel.vendored.packaging._tokenizer</a>
+ &#8226;   <a href="#task_context">task_context</a>
 
   </div>
 
@@ -10502,6 +10728,7 @@ imported by:
  &#8226;   <a href="#PIL.GifImagePlugin">PIL.GifImagePlugin</a>
  &#8226;   <a href="#PIL.Image">PIL.Image</a>
  &#8226;   <a href="#PIL.ImageCms">PIL.ImageCms</a>
+ &#8226;   <a href="#PIL.ImageFont">PIL.ImageFont</a>
  &#8226;   <a href="#PIL.PngImagePlugin">PIL.PngImagePlugin</a>
  &#8226;   <a href="#PyPDF2._encryption">PyPDF2._encryption</a>
  &#8226;   <a href="#PyPDF2.constants">PyPDF2.constants</a>
@@ -10570,6 +10797,22 @@ imported by:
 </div>
 
 <div class="node">
+  <a name="fitz"></a>
+  <a target="code" href="///D:/MyWork/project/pdf-split/.venv/Lib/site-packages/fitz/__init__.py" type="text/plain"><tt>fitz</tt></a>
+<span class="moduletype">Package</span>  <div class="import">
+imports:
+    <a href="#pymupdf">pymupdf</a>
+
+  </div>
+  <div class="import">
+imported by:
+    <a href="#split_pdf_gui.py">split_pdf_gui.py</a>
+
+  </div>
+
+</div>
+
+<div class="node">
   <a name="fnmatch"></a>
   <a target="code" href="///C:/Python312/Lib/fnmatch.py" type="text/plain"><tt>fnmatch</tt></a>
 <span class="moduletype">SourceModule</span>  <div class="import">
@@ -10595,6 +10838,17 @@ imported by:
  &#8226;   <a href="#tracemalloc">tracemalloc</a>
  &#8226;   <a href="#unittest.loader">unittest.loader</a>
  &#8226;   <a href="#urllib.request">urllib.request</a>
+
+  </div>
+
+</div>
+
+<div class="node">
+  <a name="fontTools"></a>
+  <a target="code" href="" type="text/plain"><tt>fontTools</tt></a>
+<span class="moduletype">MissingModule</span>  <div class="import">
+imported by:
+    <a href="#pymupdf">pymupdf</a>
 
   </div>
 
@@ -10909,6 +11163,7 @@ imports:
   <div class="import">
 imported by:
     <a href="#pdb">pdb</a>
+ &#8226;   <a href="#pymupdf">pymupdf</a>
  &#8226;   <a href="#reportlab.lib.utils">reportlab.lib.utils</a>
  &#8226;   <a href="#reportlab.pdfbase.pdfutils">reportlab.pdfbase.pdfutils</a>
  &#8226;   <a href="#setuptools._distutils.command.sdist">setuptools._distutils.command.sdist</a>
@@ -11064,6 +11319,7 @@ imported by:
  &#8226;   <a href="#http.server">http.server</a>
  &#8226;   <a href="#lxml.doctestcompare">lxml.doctestcompare</a>
  &#8226;   <a href="#lxml.html.diff">lxml.html.diff</a>
+ &#8226;   <a href="#pymupdf.table">pymupdf.table</a>
 
   </div>
 
@@ -11401,6 +11657,7 @@ imported by:
  &#8226;   <a href="#importlib.util">importlib.util</a>
  &#8226;   <a href="#inspect">inspect</a>
  &#8226;   <a href="#pkgutil">pkgutil</a>
+ &#8226;   <a href="#pymupdf">pymupdf</a>
  &#8226;   <a href="#reportlab.lib.utils">reportlab.lib.utils</a>
  &#8226;   <a href="#setuptools._distutils">setuptools._distutils</a>
  &#8226;   <a href="#setuptools._vendor.importlib_metadata">setuptools._vendor.importlib_metadata</a>
@@ -11902,6 +12159,7 @@ imported by:
  &#8226;   <a href="#pkgutil">pkgutil</a>
  &#8226;   <a href="#py_compile">py_compile</a>
  &#8226;   <a href="#pydoc">pydoc</a>
+ &#8226;   <a href="#pymupdf">pymupdf</a>
  &#8226;   <a href="#reportlab">reportlab</a>
  &#8226;   <a href="#reportlab.lib.utils">reportlab.lib.utils</a>
  &#8226;   <a href="#runpy">runpy</a>
@@ -11986,6 +12244,9 @@ imported by:
  &#8226;   <a href="#pkgutil">pkgutil</a>
  &#8226;   <a href="#pydoc">pydoc</a>
  &#8226;   <a href="#pyi_rth_inspect.py">pyi_rth_inspect.py</a>
+ &#8226;   <a href="#pymupdf">pymupdf</a>
+ &#8226;   <a href="#pymupdf.mupdf">pymupdf.mupdf</a>
+ &#8226;   <a href="#pymupdf.table">pymupdf.table</a>
  &#8226;   <a href="#reportlab.graphics.shapes">reportlab.graphics.shapes</a>
  &#8226;   <a href="#rlcompleter">rlcompleter</a>
  &#8226;   <a href="#setuptools._vendor.importlib_metadata">setuptools._vendor.importlib_metadata</a>
@@ -12027,6 +12288,7 @@ imported by:
  &#8226;   <a href="#PIL.IcoImagePlugin">PIL.IcoImagePlugin</a>
  &#8226;   <a href="#PIL.Image">PIL.Image</a>
  &#8226;   <a href="#PIL.ImageFile">PIL.ImageFile</a>
+ &#8226;   <a href="#PIL.ImageFont">PIL.ImageFont</a>
  &#8226;   <a href="#PIL.ImageQt">PIL.ImageQt</a>
  &#8226;   <a href="#PIL.ImageTk">PIL.ImageTk</a>
  &#8226;   <a href="#PIL.IptcImagePlugin">PIL.IptcImagePlugin</a>
@@ -12081,6 +12343,8 @@ imported by:
  &#8226;   <a href="#pickle">pickle</a>
  &#8226;   <a href="#pprint">pprint</a>
  &#8226;   <a href="#pydoc">pydoc</a>
+ &#8226;   <a href="#pymupdf">pymupdf</a>
+ &#8226;   <a href="#pymupdf.mupdf">pymupdf.mupdf</a>
  &#8226;   <a href="#quopri">quopri</a>
  &#8226;   <a href="#reportlab.graphics.renderPDF">reportlab.graphics.renderPDF</a>
  &#8226;   <a href="#reportlab.graphics.renderPM">reportlab.graphics.renderPM</a>
@@ -12184,6 +12448,7 @@ imported by:
  &#8226;   <a href="#packaging.version">packaging.version</a>
  &#8226;   <a href="#pickle">pickle</a>
  &#8226;   <a href="#platform">platform</a>
+ &#8226;   <a href="#pymupdf.table">pymupdf.table</a>
  &#8226;   <a href="#random">random</a>
  &#8226;   <a href="#reportlab.lib.utils">reportlab.lib.utils</a>
  &#8226;   <a href="#reportlab.pdfgen.textobject">reportlab.pdfgen.textobject</a>
@@ -12274,6 +12539,7 @@ imported by:
  &#8226;   <a href="#json.decoder">json.decoder</a>
  &#8226;   <a href="#json.encoder">json.encoder</a>
  &#8226;   <a href="#json.scanner">json.scanner</a>
+ &#8226;   <a href="#pymupdf">pymupdf</a>
  &#8226;   <a href="#setuptools._vendor.importlib_metadata">setuptools._vendor.importlib_metadata</a>
  &#8226;   <a href="#setuptools.config._validate_pyproject.error_reporting">setuptools.config._validate_pyproject.error_reporting</a>
  &#8226;   <a href="#setuptools.msvc">setuptools.msvc</a>
@@ -12458,6 +12724,7 @@ imported by:
  &#8226;   <a href="#http.cookiejar">http.cookiejar</a>
  &#8226;   <a href="#multiprocessing.util">multiprocessing.util</a>
  &#8226;   <a href="#packaging.tags">packaging.tags</a>
+ &#8226;   <a href="#pymupdf">pymupdf</a>
  &#8226;   <a href="#reportlab.platypus.doctemplate">reportlab.platypus.doctemplate</a>
  &#8226;   <a href="#reportlab.platypus.frames">reportlab.platypus.frames</a>
  &#8226;   <a href="#setuptools._distutils._log">setuptools._distutils._log</a>
@@ -13254,6 +13521,7 @@ imported by:
  &#8226;   <a href="#PIL.GimpGradientFile">PIL.GimpGradientFile</a>
  &#8226;   <a href="#PIL.IcoImagePlugin">PIL.IcoImagePlugin</a>
  &#8226;   <a href="#PIL.Image">PIL.Image</a>
+ &#8226;   <a href="#PIL.ImageDraw">PIL.ImageDraw</a>
  &#8226;   <a href="#PIL.JpegImagePlugin">PIL.JpegImagePlugin</a>
  &#8226;   <a href="#PIL.PdfImagePlugin">PIL.PdfImagePlugin</a>
  &#8226;   <a href="#PIL.PpmImagePlugin">PIL.PpmImagePlugin</a>
@@ -13265,6 +13533,8 @@ imported by:
  &#8226;   <a href="#_pydecimal">_pydecimal</a>
  &#8226;   <a href="#asyncio.windows_events">asyncio.windows_events</a>
  &#8226;   <a href="#fractions">fractions</a>
+ &#8226;   <a href="#pymupdf">pymupdf</a>
+ &#8226;   <a href="#pymupdf.utils">pymupdf.utils</a>
  &#8226;   <a href="#random">random</a>
  &#8226;   <a href="#reportlab.graphics.charts.piecharts">reportlab.graphics.charts.piecharts</a>
  &#8226;   <a href="#reportlab.graphics.charts.utils">reportlab.graphics.charts.utils</a>
@@ -13423,6 +13693,7 @@ imported by:
  &#8226;   <a href="#multiprocessing.synchronize">multiprocessing.synchronize</a>
  &#8226;   <a href="#multiprocessing.util">multiprocessing.util</a>
  &#8226;   <a href="#pyi_rth_multiprocessing.py">pyi_rth_multiprocessing.py</a>
+ &#8226;   <a href="#pymupdf._apply_pages">pymupdf._apply_pages</a>
 
   </div>
 
@@ -14169,6 +14440,29 @@ imported by:
 </div>
 
 <div class="node">
+  <a name="mupdf"></a>
+  <a target="code" href="" type="text/plain"><tt>mupdf</tt></a>
+<span class="moduletype">MissingModule</span>  <div class="import">
+imported by:
+    <a href="#pymupdf">pymupdf</a>
+ &#8226;   <a href="#pymupdf.utils">pymupdf.utils</a>
+
+  </div>
+
+</div>
+
+<div class="node">
+  <a name="mupdf_cppyy"></a>
+  <a target="code" href="" type="text/plain"><tt>mupdf_cppyy</tt></a>
+<span class="moduletype">MissingModule</span>  <div class="import">
+imported by:
+    <a href="#pymupdf">pymupdf</a>
+
+  </div>
+
+</div>
+
+<div class="node">
   <a name="netrc"></a>
   <a target="code" href="///C:/Python312/Lib/netrc.py" type="text/plain"><tt>netrc</tt></a>
 <span class="moduletype">SourceModule</span>  <div class="import">
@@ -14339,6 +14633,7 @@ imported by:
  &#8226;   <a href="#inspect">inspect</a>
  &#8226;   <a href="#lxml.html.diff">lxml.html.diff</a>
  &#8226;   <a href="#packaging.markers">packaging.markers</a>
+ &#8226;   <a href="#pymupdf.table">pymupdf.table</a>
  &#8226;   <a href="#random">random</a>
  &#8226;   <a href="#reportlab.pdfgen.textobject">reportlab.pdfgen.textobject</a>
  &#8226;   <a href="#reportlab.platypus.paragraph">reportlab.platypus.paragraph</a>
@@ -14415,6 +14710,7 @@ imported by:
  &#8226;   <a href="#PIL.ImImagePlugin">PIL.ImImagePlugin</a>
  &#8226;   <a href="#PIL.Image">PIL.Image</a>
  &#8226;   <a href="#PIL.ImageFile">PIL.ImageFile</a>
+ &#8226;   <a href="#PIL.ImageFont">PIL.ImageFont</a>
  &#8226;   <a href="#PIL.ImageShow">PIL.ImageShow</a>
  &#8226;   <a href="#PIL.Jpeg2KImagePlugin">PIL.Jpeg2KImagePlugin</a>
  &#8226;   <a href="#PIL.JpegImagePlugin">PIL.JpegImagePlugin</a>
@@ -14501,6 +14797,7 @@ imported by:
  &#8226;   <a href="#packaging.markers">packaging.markers</a>
  &#8226;   <a href="#pathlib">pathlib</a>
  &#8226;   <a href="#pdb">pdb</a>
+ &#8226;   <a href="#pdf_split_task">pdf_split_task</a>
  &#8226;   <a href="#pkgutil">pkgutil</a>
  &#8226;   <a href="#platform">platform</a>
  &#8226;   <a href="#posixpath">posixpath</a>
@@ -14509,6 +14806,9 @@ imported by:
  &#8226;   <a href="#pyi_rth__tkinter.py">pyi_rth__tkinter.py</a>
  &#8226;   <a href="#pyi_rth_inspect.py">pyi_rth_inspect.py</a>
  &#8226;   <a href="#pyi_rth_setuptools.py">pyi_rth_setuptools.py</a>
+ &#8226;   <a href="#pymupdf">pymupdf</a>
+ &#8226;   <a href="#pymupdf._apply_pages">pymupdf._apply_pages</a>
+ &#8226;   <a href="#pymupdf.mupdf">pymupdf.mupdf</a>
  &#8226;   <a href="#random">random</a>
  &#8226;   <a href="#reportlab">reportlab</a>
  &#8226;   <a href="#reportlab.graphics.renderPDF">reportlab.graphics.renderPDF</a>
@@ -15039,6 +15339,17 @@ imported by:
 </div>
 
 <div class="node">
+  <a name="pandas"></a>
+  <a target="code" href="" type="text/plain"><tt>pandas</tt></a>
+<span class="moduletype">MissingModule</span>  <div class="import">
+imported by:
+    <a href="#pymupdf.table">pymupdf.table</a>
+
+  </div>
+
+</div>
+
+<div class="node">
   <a name="pathlib"></a>
   <a target="code" href="///C:/Python312/Lib/pathlib.py" type="text/plain"><tt>pathlib</tt></a>
 <span class="moduletype">SourceModule</span>  <div class="import">
@@ -15071,6 +15382,7 @@ imported by:
  &#8226;   <a href="#importlib.resources._legacy">importlib.resources._legacy</a>
  &#8226;   <a href="#importlib.resources.abc">importlib.resources.abc</a>
  &#8226;   <a href="#importlib.resources.readers">importlib.resources.readers</a>
+ &#8226;   <a href="#pymupdf">pymupdf</a>
  &#8226;   <a href="#setuptools._distutils.compilers.C.base">setuptools._distutils.compilers.C.base</a>
  &#8226;   <a href="#setuptools._distutils.dir_util">setuptools._distutils.dir_util</a>
  &#8226;   <a href="#setuptools._distutils.dist">setuptools._distutils.dist</a>
@@ -15125,6 +15437,25 @@ imports:
 imported by:
     <a href="#doctest">doctest</a>
  &#8226;   <a href="#pdb">pdb</a>
+
+  </div>
+
+</div>
+
+<div class="node">
+  <a name="pdf_split_task"></a>
+  <a target="code" href="///D:/MyWork/project/pdf-split/pdf_split_task.py" type="text/plain"><tt>pdf_split_task</tt></a>
+<span class="moduletype">SourceModule</span>  <div class="import">
+imports:
+    <a href="#PyPDF2">PyPDF2</a>
+ &#8226;   <a href="#os">os</a>
+ &#8226;   <a href="#task_context">task_context</a>
+ &#8226;   <a href="#typing">typing</a>
+
+  </div>
+  <div class="import">
+imported by:
+    <a href="#split_pdf_gui.py">split_pdf_gui.py</a>
 
   </div>
 
@@ -15219,6 +15550,7 @@ imported by:
     <a href="#packaging.markers">packaging.markers</a>
  &#8226;   <a href="#packaging.tags">packaging.tags</a>
  &#8226;   <a href="#pydoc">pydoc</a>
+ &#8226;   <a href="#pymupdf">pymupdf</a>
  &#8226;   <a href="#reportlab.lib.utils">reportlab.lib.utils</a>
  &#8226;   <a href="#setuptools._distutils.compat.py39">setuptools._distutils.compat.py39</a>
  &#8226;   <a href="#setuptools._distutils.spawn">setuptools._distutils.spawn</a>
@@ -15491,6 +15823,289 @@ imported by:
 </div>
 
 <div class="node">
+  <a name="pymupdf"></a>
+  <a target="code" href="///D:/MyWork/project/pdf-split/.venv/Lib/site-packages/pymupdf/__init__.py" type="text/plain"><tt>pymupdf</tt></a>
+<span class="moduletype">Package</span>  <div class="import">
+imports:
+    <a href="#PIL">PIL</a>
+ &#8226;   <a href="#PIL.Image">PIL.Image</a>
+ &#8226;   <a href="#atexit">atexit</a>
+ &#8226;   <a href="#base64">base64</a>
+ &#8226;   <a href="#binascii">binascii</a>
+ &#8226;   <a href="#collections">collections</a>
+ &#8226;   <a href="#cppyy">cppyy</a>
+ &#8226;   <a href="#fontTools">fontTools</a>
+ &#8226;   <a href="#glob">glob</a>
+ &#8226;   <a href="#importlib">importlib</a>
+ &#8226;   <a href="#importlib.util">importlib.util</a>
+ &#8226;   <a href="#inspect">inspect</a>
+ &#8226;   <a href="#io">io</a>
+ &#8226;   <a href="#json">json</a>
+ &#8226;   <a href="#logging">logging</a>
+ &#8226;   <a href="#math">math</a>
+ &#8226;   <a href="#mupdf">mupdf</a>
+ &#8226;   <a href="#mupdf_cppyy">mupdf_cppyy</a>
+ &#8226;   <a href="#os">os</a>
+ &#8226;   <a href="#pathlib">pathlib</a>
+ &#8226;   <a href="#platform">platform</a>
+ &#8226;   <a href="#pymupdf">pymupdf</a>
+ &#8226;   <a href="#pymupdf._apply_pages">pymupdf._apply_pages</a>
+ &#8226;   <a href="#pymupdf._build">pymupdf._build</a>
+ &#8226;   <a href="#pymupdf._extra">pymupdf._extra</a>
+ &#8226;   <a href="#pymupdf._mupdf">pymupdf._mupdf</a>
+ &#8226;   <a href="#pymupdf._wxcolors">pymupdf._wxcolors</a>
+ &#8226;   <a href="#pymupdf.extra">pymupdf.extra</a>
+ &#8226;   <a href="#pymupdf.mupdf">pymupdf.mupdf</a>
+ &#8226;   <a href="#pymupdf.pymupdf">pymupdf.pymupdf</a>
+ &#8226;   <a href="#pymupdf.table">pymupdf.table</a>
+ &#8226;   <a href="#pymupdf.utils">pymupdf.utils</a>
+ &#8226;   <a href="#pymupdf_fonts">pymupdf_fonts</a>
+ &#8226;   <a href="#random">random</a>
+ &#8226;   <a href="#re">re</a>
+ &#8226;   <a href="#string">string</a>
+ &#8226;   <a href="#subprocess">subprocess</a>
+ &#8226;   <a href="#sys">sys</a>
+ &#8226;   <a href="#tarfile">tarfile</a>
+ &#8226;   <a href="#tempfile">tempfile</a>
+ &#8226;   <a href="#textwrap">textwrap</a>
+ &#8226;   <a href="#time">time</a>
+ &#8226;   <a href="#traceback">traceback</a>
+ &#8226;   <a href="#typing">typing</a>
+ &#8226;   <a href="#unicodedata">unicodedata</a>
+ &#8226;   <a href="#warnings">warnings</a>
+ &#8226;   <a href="#weakref">weakref</a>
+ &#8226;   <a href="#zipfile">zipfile</a>
+
+  </div>
+  <div class="import">
+imported by:
+    <a href="#fitz">fitz</a>
+ &#8226;   <a href="#pymupdf">pymupdf</a>
+ &#8226;   <a href="#pymupdf._apply_pages">pymupdf._apply_pages</a>
+ &#8226;   <a href="#pymupdf._build">pymupdf._build</a>
+ &#8226;   <a href="#pymupdf._extra">pymupdf._extra</a>
+ &#8226;   <a href="#pymupdf._mupdf">pymupdf._mupdf</a>
+ &#8226;   <a href="#pymupdf._wxcolors">pymupdf._wxcolors</a>
+ &#8226;   <a href="#pymupdf.extra">pymupdf.extra</a>
+ &#8226;   <a href="#pymupdf.mupdf">pymupdf.mupdf</a>
+ &#8226;   <a href="#pymupdf.pymupdf">pymupdf.pymupdf</a>
+ &#8226;   <a href="#pymupdf.table">pymupdf.table</a>
+ &#8226;   <a href="#pymupdf.utils">pymupdf.utils</a>
+
+  </div>
+
+</div>
+
+<div class="node">
+  <a name="pymupdf._apply_pages"></a>
+  <a target="code" href="///D:/MyWork/project/pdf-split/.venv/Lib/site-packages/pymupdf/_apply_pages.py" type="text/plain"><tt>pymupdf._apply_pages</tt></a>
+<span class="moduletype">SourceModule</span>  <div class="import">
+imports:
+    <a href="#multiprocessing">multiprocessing</a>
+ &#8226;   <a href="#os">os</a>
+ &#8226;   <a href="#pymupdf">pymupdf</a>
+ &#8226;   <a href="#time">time</a>
+
+  </div>
+  <div class="import">
+imported by:
+    <a href="#pymupdf">pymupdf</a>
+
+  </div>
+
+</div>
+
+<div class="node">
+  <a name="pymupdf._build"></a>
+  <a target="code" href="///D:/MyWork/project/pdf-split/.venv/Lib/site-packages/pymupdf/_build.py" type="text/plain"><tt>pymupdf._build</tt></a>
+<span class="moduletype">SourceModule</span>  <div class="import">
+imports:
+    <a href="#pymupdf">pymupdf</a>
+
+  </div>
+  <div class="import">
+imported by:
+    <a href="#pymupdf">pymupdf</a>
+
+  </div>
+
+</div>
+
+<div class="node">
+  <a name="pymupdf._extra"></a>
+  <tt>pymupdf._extra</tt> <span class="moduletype"><tt>d:\MyWork\project\pdf-split\.venv\Lib\site-packages\pymupdf\_extra.pyd</tt></span>  <div class="import">
+imports:
+    <a href="#pymupdf">pymupdf</a>
+
+  </div>
+  <div class="import">
+imported by:
+    <a href="#pymupdf">pymupdf</a>
+ &#8226;   <a href="#pymupdf.extra">pymupdf.extra</a>
+
+  </div>
+
+</div>
+
+<div class="node">
+  <a name="pymupdf._mupdf"></a>
+  <tt>pymupdf._mupdf</tt> <span class="moduletype"><tt>d:\MyWork\project\pdf-split\.venv\Lib\site-packages\pymupdf\_mupdf.pyd</tt></span>  <div class="import">
+imports:
+    <a href="#pymupdf">pymupdf</a>
+
+  </div>
+  <div class="import">
+imported by:
+    <a href="#pymupdf">pymupdf</a>
+ &#8226;   <a href="#pymupdf.mupdf">pymupdf.mupdf</a>
+
+  </div>
+
+</div>
+
+<div class="node">
+  <a name="pymupdf._wxcolors"></a>
+  <a target="code" href="///D:/MyWork/project/pdf-split/.venv/Lib/site-packages/pymupdf/_wxcolors.py" type="text/plain"><tt>pymupdf._wxcolors</tt></a>
+<span class="moduletype">SourceModule</span>  <div class="import">
+imports:
+    <a href="#pymupdf">pymupdf</a>
+
+  </div>
+  <div class="import">
+imported by:
+    <a href="#pymupdf">pymupdf</a>
+
+  </div>
+
+</div>
+
+<div class="node">
+  <a name="pymupdf.extra"></a>
+  <a target="code" href="///D:/MyWork/project/pdf-split/.venv/Lib/site-packages/pymupdf/extra.py" type="text/plain"><tt>pymupdf.extra</tt></a>
+<span class="moduletype">SourceModule</span>  <div class="import">
+imports:
+    <a href="#__builtin__">__builtin__</a>
+ &#8226;   <a href="#builtins">builtins</a>
+ &#8226;   <a href="#pymupdf">pymupdf</a>
+ &#8226;   <a href="#pymupdf._extra">pymupdf._extra</a>
+ &#8226;   <a href="#sys">sys</a>
+
+  </div>
+  <div class="import">
+imported by:
+    <a href="#pymupdf">pymupdf</a>
+
+  </div>
+
+</div>
+
+<div class="node">
+  <a name="pymupdf.mupdf"></a>
+  <a target="code" href="///D:/MyWork/project/pdf-split/.venv/Lib/site-packages/pymupdf/mupdf.py" type="text/plain"><tt>pymupdf.mupdf</tt></a>
+<span class="moduletype">SourceModule</span>  <div class="import">
+imports:
+    <a href="#__builtin__">__builtin__</a>
+ &#8226;   <a href="#builtins">builtins</a>
+ &#8226;   <a href="#inspect">inspect</a>
+ &#8226;   <a href="#io">io</a>
+ &#8226;   <a href="#os">os</a>
+ &#8226;   <a href="#pymupdf">pymupdf</a>
+ &#8226;   <a href="#pymupdf._mupdf">pymupdf._mupdf</a>
+ &#8226;   <a href="#re">re</a>
+ &#8226;   <a href="#sys">sys</a>
+ &#8226;   <a href="#traceback">traceback</a>
+ &#8226;   <a href="#types">types</a>
+ &#8226;   <a href="#weakref">weakref</a>
+
+  </div>
+  <div class="import">
+imported by:
+    <a href="#pymupdf">pymupdf</a>
+ &#8226;   <a href="#pymupdf.table">pymupdf.table</a>
+ &#8226;   <a href="#pymupdf.utils">pymupdf.utils</a>
+
+  </div>
+
+</div>
+
+<div class="node">
+  <a name="pymupdf.pymupdf"></a>
+  <a target="code" href="///D:/MyWork/project/pdf-split/.venv/Lib/site-packages/pymupdf/pymupdf.py" type="text/plain"><tt>pymupdf.pymupdf</tt></a>
+<span class="moduletype">SourceModule</span>  <div class="import">
+imports:
+    <a href="#pymupdf">pymupdf</a>
+
+  </div>
+  <div class="import">
+imported by:
+    <a href="#pymupdf">pymupdf</a>
+ &#8226;   <a href="#pymupdf.utils">pymupdf.utils</a>
+
+  </div>
+
+</div>
+
+<div class="node">
+  <a name="pymupdf.table"></a>
+  <a target="code" href="///D:/MyWork/project/pdf-split/.venv/Lib/site-packages/pymupdf/table.py" type="text/plain"><tt>pymupdf.table</tt></a>
+<span class="moduletype">SourceModule</span>  <div class="import">
+imports:
+    <a href="#collections.abc">collections.abc</a>
+ &#8226;   <a href="#dataclasses">dataclasses</a>
+ &#8226;   <a href="#html">html</a>
+ &#8226;   <a href="#inspect">inspect</a>
+ &#8226;   <a href="#itertools">itertools</a>
+ &#8226;   <a href="#operator">operator</a>
+ &#8226;   <a href="#pandas">pandas</a>
+ &#8226;   <a href="#pymupdf">pymupdf</a>
+ &#8226;   <a href="#pymupdf.mupdf">pymupdf.mupdf</a>
+ &#8226;   <a href="#string">string</a>
+ &#8226;   <a href="#weakref">weakref</a>
+
+  </div>
+  <div class="import">
+imported by:
+    <a href="#pymupdf">pymupdf</a>
+
+  </div>
+
+</div>
+
+<div class="node">
+  <a name="pymupdf.utils"></a>
+  <a target="code" href="///D:/MyWork/project/pdf-split/.venv/Lib/site-packages/pymupdf/utils.py" type="text/plain"><tt>pymupdf.utils</tt></a>
+<span class="moduletype">SourceModule</span>  <div class="import">
+imports:
+    <a href="#math">math</a>
+ &#8226;   <a href="#mupdf">mupdf</a>
+ &#8226;   <a href="#pymupdf">pymupdf</a>
+ &#8226;   <a href="#pymupdf.mupdf">pymupdf.mupdf</a>
+ &#8226;   <a href="#pymupdf.pymupdf">pymupdf.pymupdf</a>
+ &#8226;   <a href="#string">string</a>
+ &#8226;   <a href="#typing">typing</a>
+ &#8226;   <a href="#weakref">weakref</a>
+
+  </div>
+  <div class="import">
+imported by:
+    <a href="#pymupdf">pymupdf</a>
+
+  </div>
+
+</div>
+
+<div class="node">
+  <a name="pymupdf_fonts"></a>
+  <a target="code" href="" type="text/plain"><tt>pymupdf_fonts</tt></a>
+<span class="moduletype">MissingModule</span>  <div class="import">
+imported by:
+    <a href="#pymupdf">pymupdf</a>
+
+  </div>
+
+</div>
+
+<div class="node">
   <a name="pyphen"></a>
   <a target="code" href="" type="text/plain"><tt>pyphen</tt></a>
 <span class="moduletype">MissingModule</span>  <div class="import">
@@ -15577,6 +16192,7 @@ imported by:
  &#8226;   <a href="#PyPDF2._writer">PyPDF2._writer</a>
  &#8226;   <a href="#email.generator">email.generator</a>
  &#8226;   <a href="#email.utils">email.utils</a>
+ &#8226;   <a href="#pymupdf">pymupdf</a>
  &#8226;   <a href="#reportlab.lib.randomtext">reportlab.lib.randomtext</a>
  &#8226;   <a href="#reportlab.platypus.doctemplate">reportlab.platypus.doctemplate</a>
  &#8226;   <a href="#secrets">secrets</a>
@@ -15695,6 +16311,8 @@ imported by:
  &#8226;   <a href="#posixpath">posixpath</a>
  &#8226;   <a href="#pprint">pprint</a>
  &#8226;   <a href="#pydoc">pydoc</a>
+ &#8226;   <a href="#pymupdf">pymupdf</a>
+ &#8226;   <a href="#pymupdf.mupdf">pymupdf.mupdf</a>
  &#8226;   <a href="#re">re</a>
  &#8226;   <a href="#re._casefix">re._casefix</a>
  &#8226;   <a href="#re._compiler">re._compiler</a>
@@ -23347,6 +23965,9 @@ imported by:
  &#8226;   <a href="#lxml.html.html5parser">lxml.html.html5parser</a>
  &#8226;   <a href="#ntpath">ntpath</a>
  &#8226;   <a href="#nturl2path">nturl2path</a>
+ &#8226;   <a href="#pymupdf">pymupdf</a>
+ &#8226;   <a href="#pymupdf.table">pymupdf.table</a>
+ &#8226;   <a href="#pymupdf.utils">pymupdf.utils</a>
  &#8226;   <a href="#reportlab.pdfgen.canvas">reportlab.pdfgen.canvas</a>
  &#8226;   <a href="#reportlab.platypus.paragraph">reportlab.platypus.paragraph</a>
  &#8226;   <a href="#setuptools._distutils.fancy_getopt">setuptools._distutils.fancy_getopt</a>
@@ -23391,6 +24012,7 @@ imported by:
  &#8226;   <a href="#PIL.FtexImagePlugin">PIL.FtexImagePlugin</a>
  &#8226;   <a href="#PIL.IcnsImagePlugin">PIL.IcnsImagePlugin</a>
  &#8226;   <a href="#PIL.Image">PIL.Image</a>
+ &#8226;   <a href="#PIL.ImageDraw">PIL.ImageDraw</a>
  &#8226;   <a href="#PIL.ImageFile">PIL.ImageFile</a>
  &#8226;   <a href="#PIL.Jpeg2KImagePlugin">PIL.Jpeg2KImagePlugin</a>
  &#8226;   <a href="#PIL.JpegImagePlugin">PIL.JpegImagePlugin</a>
@@ -23486,6 +24108,7 @@ imported by:
  &#8226;   <a href="#platform">platform</a>
  &#8226;   <a href="#pydoc">pydoc</a>
  &#8226;   <a href="#pyi_rth_multiprocessing.py">pyi_rth_multiprocessing.py</a>
+ &#8226;   <a href="#pymupdf">pymupdf</a>
  &#8226;   <a href="#reportlab.lib.rl_accel">reportlab.lib.rl_accel</a>
  &#8226;   <a href="#setuptools._distutils.compilers.C.msvc">setuptools._distutils.compilers.C.msvc</a>
  &#8226;   <a href="#setuptools._distutils.spawn">setuptools._distutils.spawn</a>
@@ -23513,6 +24136,7 @@ imported by:
  &#8226;   <a href="#PIL.IcnsImagePlugin">PIL.IcnsImagePlugin</a>
  &#8226;   <a href="#PIL.Image">PIL.Image</a>
  &#8226;   <a href="#PIL.ImageCms">PIL.ImageCms</a>
+ &#8226;   <a href="#PIL.ImageFont">PIL.ImageFont</a>
  &#8226;   <a href="#PIL.ImageMode">PIL.ImageMode</a>
  &#8226;   <a href="#PIL.ImageQt">PIL.ImageQt</a>
  &#8226;   <a href="#PIL.ImageShow">PIL.ImageShow</a>
@@ -23623,6 +24247,9 @@ imported by:
  &#8226;   <a href="#pyi_rth__tkinter.py">pyi_rth__tkinter.py</a>
  &#8226;   <a href="#pyi_rth_inspect.py">pyi_rth_inspect.py</a>
  &#8226;   <a href="#pyi_rth_multiprocessing.py">pyi_rth_multiprocessing.py</a>
+ &#8226;   <a href="#pymupdf">pymupdf</a>
+ &#8226;   <a href="#pymupdf.extra">pymupdf.extra</a>
+ &#8226;   <a href="#pymupdf.mupdf">pymupdf.mupdf</a>
  &#8226;   <a href="#quopri">quopri</a>
  &#8226;   <a href="#re._compiler">re._compiler</a>
  &#8226;   <a href="#reportlab">reportlab</a>
@@ -23814,10 +24441,29 @@ imports:
   </div>
   <div class="import">
 imported by:
-    <a href="#setuptools._distutils.archive_util">setuptools._distutils.archive_util</a>
+    <a href="#pymupdf">pymupdf</a>
+ &#8226;   <a href="#setuptools._distutils.archive_util">setuptools._distutils.archive_util</a>
  &#8226;   <a href="#setuptools._vendor.jaraco.context">setuptools._vendor.jaraco.context</a>
  &#8226;   <a href="#setuptools.archive_util">setuptools.archive_util</a>
  &#8226;   <a href="#shutil">shutil</a>
+
+  </div>
+
+</div>
+
+<div class="node">
+  <a name="task_context"></a>
+  <a target="code" href="///D:/MyWork/project/pdf-split/task_context.py" type="text/plain"><tt>task_context</tt></a>
+<span class="moduletype">SourceModule</span>  <div class="import">
+imports:
+    <a href="#dataclasses">dataclasses</a>
+ &#8226;   <a href="#typing">typing</a>
+
+  </div>
+  <div class="import">
+imported by:
+    <a href="#pdf_split_task">pdf_split_task</a>
+ &#8226;   <a href="#split_pdf_gui.py">split_pdf_gui.py</a>
 
   </div>
 
@@ -23855,6 +24501,7 @@ imported by:
  &#8226;   <a href="#multiprocessing.synchronize">multiprocessing.synchronize</a>
  &#8226;   <a href="#multiprocessing.util">multiprocessing.util</a>
  &#8226;   <a href="#pydoc">pydoc</a>
+ &#8226;   <a href="#pymupdf">pymupdf</a>
  &#8226;   <a href="#reportlab.lib.rltempfile">reportlab.lib.rltempfile</a>
  &#8226;   <a href="#setuptools._core_metadata">setuptools._core_metadata</a>
  &#8226;   <a href="#setuptools._distutils.compilers.C.base">setuptools._distutils.compilers.C.base</a>
@@ -23907,6 +24554,7 @@ imported by:
  &#8226;   <a href="#importlib.metadata._adapters">importlib.metadata._adapters</a>
  &#8226;   <a href="#optparse">optparse</a>
  &#8226;   <a href="#pydoc">pydoc</a>
+ &#8226;   <a href="#pymupdf">pymupdf</a>
  &#8226;   <a href="#reportlab.lib.randomtext">reportlab.lib.randomtext</a>
  &#8226;   <a href="#reportlab.lib.rl_safe_eval">reportlab.lib.rl_safe_eval</a>
  &#8226;   <a href="#setuptools._core_metadata">setuptools._core_metadata</a>
@@ -24018,6 +24666,8 @@ imported by:
  &#8226;   <a href="#multiprocessing.queues">multiprocessing.queues</a>
  &#8226;   <a href="#multiprocessing.synchronize">multiprocessing.synchronize</a>
  &#8226;   <a href="#pydoc">pydoc</a>
+ &#8226;   <a href="#pymupdf">pymupdf</a>
+ &#8226;   <a href="#pymupdf._apply_pages">pymupdf._apply_pages</a>
  &#8226;   <a href="#queue">queue</a>
  &#8226;   <a href="#random">random</a>
  &#8226;   <a href="#reportlab.graphics.charts.utils">reportlab.graphics.charts.utils</a>
@@ -24430,6 +25080,8 @@ imported by:
  &#8226;   <a href="#pdb">pdb</a>
  &#8226;   <a href="#py_compile">py_compile</a>
  &#8226;   <a href="#pydoc">pydoc</a>
+ &#8226;   <a href="#pymupdf">pymupdf</a>
+ &#8226;   <a href="#pymupdf.mupdf">pymupdf.mupdf</a>
  &#8226;   <a href="#reportlab.graphics.renderPM">reportlab.graphics.renderPM</a>
  &#8226;   <a href="#reportlab.lib.utils">reportlab.lib.utils</a>
  &#8226;   <a href="#site">site</a>
@@ -24508,7 +25160,9 @@ imports:
   <div class="import">
 imported by:
     <a href="#PIL.Image">PIL.Image</a>
+ &#8226;   <a href="#PIL.ImageDraw">PIL.ImageDraw</a>
  &#8226;   <a href="#PIL.ImageFilter">PIL.ImageFilter</a>
+ &#8226;   <a href="#PIL.ImageFont">PIL.ImageFont</a>
  &#8226;   <a href="#PIL.ImageMath">PIL.ImageMath</a>
  &#8226;   <a href="#PIL._typing">PIL._typing</a>
  &#8226;   <a href="#PyPDF2._merger">PyPDF2._merger</a>
@@ -24548,6 +25202,7 @@ imported by:
  &#8226;   <a href="#pickle">pickle</a>
  &#8226;   <a href="#pkgutil">pkgutil</a>
  &#8226;   <a href="#pprint">pprint</a>
+ &#8226;   <a href="#pymupdf.mupdf">pymupdf.mupdf</a>
  &#8226;   <a href="#queue">queue</a>
  &#8226;   <a href="#reportlab.lib.rl_safe_eval">reportlab.lib.rl_safe_eval</a>
  &#8226;   <a href="#reportlab.lib.utils">reportlab.lib.utils</a>
@@ -24619,8 +25274,11 @@ imported by:
  &#8226;   <a href="#PIL.ImImagePlugin">PIL.ImImagePlugin</a>
  &#8226;   <a href="#PIL.Image">PIL.Image</a>
  &#8226;   <a href="#PIL.ImageCms">PIL.ImageCms</a>
+ &#8226;   <a href="#PIL.ImageDraw">PIL.ImageDraw</a>
+ &#8226;   <a href="#PIL.ImageDraw2">PIL.ImageDraw2</a>
  &#8226;   <a href="#PIL.ImageFile">PIL.ImageFile</a>
  &#8226;   <a href="#PIL.ImageFilter">PIL.ImageFilter</a>
+ &#8226;   <a href="#PIL.ImageFont">PIL.ImageFont</a>
  &#8226;   <a href="#PIL.ImageMath">PIL.ImageMath</a>
  &#8226;   <a href="#PIL.ImageMode">PIL.ImageMode</a>
  &#8226;   <a href="#PIL.ImageOps">PIL.ImageOps</a>
@@ -24653,6 +25311,7 @@ imported by:
  &#8226;   <a href="#PIL._avif">PIL._avif</a>
  &#8226;   <a href="#PIL._imaging">PIL._imaging</a>
  &#8226;   <a href="#PIL._imagingcms">PIL._imagingcms</a>
+ &#8226;   <a href="#PIL._imagingft">PIL._imagingft</a>
  &#8226;   <a href="#PIL._imagingmath">PIL._imagingmath</a>
  &#8226;   <a href="#PIL._imagingtk">PIL._imagingtk</a>
  &#8226;   <a href="#PIL._typing">PIL._typing</a>
@@ -24713,6 +25372,9 @@ imported by:
  &#8226;   <a href="#packaging.utils">packaging.utils</a>
  &#8226;   <a href="#packaging.version">packaging.version</a>
  &#8226;   <a href="#pdb">pdb</a>
+ &#8226;   <a href="#pdf_split_task">pdf_split_task</a>
+ &#8226;   <a href="#pymupdf">pymupdf</a>
+ &#8226;   <a href="#pymupdf.utils">pymupdf.utils</a>
  &#8226;   <a href="#setuptools">setuptools</a>
  &#8226;   <a href="#setuptools._distutils._modified">setuptools._distutils._modified</a>
  &#8226;   <a href="#setuptools._distutils.archive_util">setuptools._distutils.archive_util</a>
@@ -24791,6 +25453,7 @@ imported by:
  &#8226;   <a href="#setuptools.monkey">setuptools.monkey</a>
  &#8226;   <a href="#setuptools.msvc">setuptools.msvc</a>
  &#8226;   <a href="#setuptools.warnings">setuptools.warnings</a>
+ &#8226;   <a href="#task_context">task_context</a>
  &#8226;   <a href="#tomllib._parser">tomllib._parser</a>
  &#8226;   <a href="#tomllib._re">tomllib._re</a>
  &#8226;   <a href="#tomllib._types">tomllib._types</a>
@@ -24964,6 +25627,7 @@ imported by:
 imported by:
     <a href="#charset_normalizer.utils">charset_normalizer.utils</a>
  &#8226;   <a href="#encodings.idna">encodings.idna</a>
+ &#8226;   <a href="#pymupdf">pymupdf</a>
  &#8226;   <a href="#re._parser">re._parser</a>
  &#8226;   <a href="#reportlab.lib.textsplit">reportlab.lib.textsplit</a>
  &#8226;   <a href="#reportlab.platypus.paragraph">reportlab.platypus.paragraph</a>
@@ -25567,6 +26231,7 @@ imports:
 imported by:
     <a href="#PIL.IcoImagePlugin">PIL.IcoImagePlugin</a>
  &#8226;   <a href="#PIL.Image">PIL.Image</a>
+ &#8226;   <a href="#PIL.ImageFont">PIL.ImageFont</a>
  &#8226;   <a href="#PIL.JpegImagePlugin">PIL.JpegImagePlugin</a>
  &#8226;   <a href="#PIL.PngImagePlugin">PIL.PngImagePlugin</a>
  &#8226;   <a href="#PIL.TgaImagePlugin">PIL.TgaImagePlugin</a>
@@ -25623,6 +26288,7 @@ imported by:
  &#8226;   <a href="#pathlib">pathlib</a>
  &#8226;   <a href="#pkgutil">pkgutil</a>
  &#8226;   <a href="#pydoc">pydoc</a>
+ &#8226;   <a href="#pymupdf">pymupdf</a>
  &#8226;   <a href="#random">random</a>
  &#8226;   <a href="#re">re</a>
  &#8226;   <a href="#re._parser">re._parser</a>
@@ -25708,6 +26374,10 @@ imported by:
  &#8226;   <a href="#multiprocessing.queues">multiprocessing.queues</a>
  &#8226;   <a href="#multiprocessing.sharedctypes">multiprocessing.sharedctypes</a>
  &#8226;   <a href="#multiprocessing.util">multiprocessing.util</a>
+ &#8226;   <a href="#pymupdf">pymupdf</a>
+ &#8226;   <a href="#pymupdf.mupdf">pymupdf.mupdf</a>
+ &#8226;   <a href="#pymupdf.table">pymupdf.table</a>
+ &#8226;   <a href="#pymupdf.utils">pymupdf.utils</a>
  &#8226;   <a href="#reportlab.graphics.charts.utils">reportlab.graphics.charts.utils</a>
  &#8226;   <a href="#reportlab.graphics.widgetbase">reportlab.graphics.widgetbase</a>
  &#8226;   <a href="#reportlab.lib.rl_safe_eval">reportlab.lib.rl_safe_eval</a>
@@ -26347,6 +27017,7 @@ imported by:
  &#8226;   <a href="#importlib.metadata">importlib.metadata</a>
  &#8226;   <a href="#importlib.resources.readers">importlib.resources.readers</a>
  &#8226;   <a href="#pyi_rth_inspect.py">pyi_rth_inspect.py</a>
+ &#8226;   <a href="#pymupdf">pymupdf</a>
  &#8226;   <a href="#setuptools._distutils.archive_util">setuptools._distutils.archive_util</a>
  &#8226;   <a href="#setuptools._vendor.wheel.cli.convert">setuptools._vendor.wheel.cli.convert</a>
  &#8226;   <a href="#setuptools._vendor.wheel.wheelfile">setuptools._vendor.wheel.wheelfile</a>

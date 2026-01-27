@@ -1717,6 +1717,90 @@ split_range_btn.grid(row=2, column=1, sticky="w", padx=4, pady=6)
 split_each_btn = ttk.Button(split_frame, text="拆成单页", command=run_split_each, width=18)
 split_each_btn.grid(row=2, column=1, sticky="e", padx=4, pady=6)
 
+# 章节拆分区域
+ttk.Separator(split_frame).grid(row=3, column=0, columnspan=3, sticky="ew", padx=8, pady=4)
+ttk.Label(split_frame, text="章节范围（每行为一章：起始页-结束页）").grid(row=4, column=0, sticky="w", padx=8, pady=6)
+chapters_text = tk.Text(split_frame, height=8, width=50)
+chapters_text.grid(row=4, column=1, sticky="ew", padx=4)
+chapters_text.insert("1.0", "例如：\n1-10\n11-25\n26-40\n41-55\n56-70")
+
+# 按章节拆分按钮
+def run_split_by_chapters():
+    input_file = input_entry.get().strip()
+    output_file = output_entry.get().strip()
+    chapters_input = chapters_text.get("1.0", tk.END).strip()
+    
+    if not input_file or not output_file:
+        messagebox.showerror("错误", "请先选择输入文件和输出文件名！")
+        return
+    
+    if not chapters_input:
+        messagebox.showerror("错误", "请输入章节范围！")
+        return
+    
+    # 解析章节范围
+    chapter_ranges = []
+    lines = chapters_input.split("\n")
+    for i, line in enumerate(lines):
+        line = line.strip()
+        if not line:
+            continue
+        if "-" in line:
+            try:
+                start_str, end_str = line.split("-", 1)
+                start = int(start_str.strip())
+                end = int(end_str.strip())
+                if start > end:
+                    start, end = end, start
+                chapter_ranges.append((start, end))
+            except ValueError:
+                messagebox.showerror("错误", f"第{i+1}行章节范围格式错误：{line}")
+                return
+        else:
+            messagebox.showerror("错误", f"第{i+1}行章节范围格式错误，缺少'-'：{line}")
+            return
+    
+    if not chapter_ranges:
+        messagebox.showerror("错误", "没有有效的章节范围！")
+        return
+    
+    def task():
+        try:
+            from pdf_split_task import split_pdf_by_chapters
+            ctx = build_tk_task_context()
+            split_pdf_by_chapters(ctx, input_file, output_file, chapter_ranges)
+        except Exception as e:
+            post_error(e)
+    
+    start_running_ui()
+    threading.Thread(target=task, daemon=True).start()
+
+split_chapters_btn = ttk.Button(split_frame, text="按章节拆分", command=run_split_by_chapters, width=18)
+split_chapters_btn.grid(row=5, column=1, sticky="w", padx=4, pady=6)
+
+# 自动按章节拆分按钮
+def run_split_by_auto_chapters():
+    input_file = input_entry.get().strip()
+    output_file = output_entry.get().strip()
+    
+    if not input_file or not output_file:
+        messagebox.showerror("错误", "请先选择输入文件和输出文件名！")
+        return
+    
+    def task():
+        try:
+            from pdf_split_task import split_pdf_by_auto_chapters
+            ctx = build_tk_task_context()
+            split_pdf_by_auto_chapters(ctx, input_file, output_file)
+        except Exception as e:
+            post_error(e)
+    
+    start_running_ui()
+    threading.Thread(target=task, daemon=True).start()
+
+split_auto_chapters_btn = ttk.Button(split_frame, text="自动按章节拆分", command=run_split_by_auto_chapters, width=18)
+split_auto_chapters_btn.grid(row=5, column=1, sticky="e", padx=4, pady=6)
+
 # 合并区域
 merge_frame = ttk.LabelFrame(container, text="合并")
 merge_frame.grid(row=2, column=0, columnspan=3, sticky="ew", padx=4, pady=4)
@@ -1981,11 +2065,11 @@ recent_btn.grid(row=0, column=11, padx=(12,2))
 
 # 控件集合（执行期间禁用）
 controls_to_toggle = []
-for w in [input_entry, output_entry, ranges_entry]:
+for w in [input_entry, output_entry, ranges_entry, chapters_text]:
     controls_to_toggle.append(w)
 for parent in [files_frame, split_frame, merge_frame, toolbar]:
     for child in parent.winfo_children():
-        if isinstance(child, ttk.Button) or isinstance(child, ttk.Entry):
+        if isinstance(child, ttk.Button) or isinstance(child, ttk.Entry) or isinstance(child, tk.Text):
             controls_to_toggle.append(child)
 
 # 将 EPUB 区域控件也加入可禁用列表

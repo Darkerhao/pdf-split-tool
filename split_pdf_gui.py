@@ -1567,7 +1567,7 @@ else:
 root.title("PDF 工具箱：拆分 / 合并 / 预览")
 root.geometry("900x750")
 root.minsize(900, 850)
-root.maxsize(1000, 1100)
+root.maxsize(1000, 1600)
 
 # 设置窗口图标（如果有）
 try:
@@ -1643,21 +1643,53 @@ style.configure("TSeparator", background="#d0d0d0")
 style.configure("TCombobox", padding=4, font=("Arial", 10), background="#ffffff", relief="sunken", borderwidth=1, foreground="#000000")
 style.configure("TMenubutton", padding=4, font=("Arial", 10), background="#ffffff", relief="raised", borderwidth=1, foreground="#000000")
 
+# 选项卡样式
+style.configure("TNotebook", background="#f0f0f0", borderwidth=1)
+style.configure("TNotebook.Tab", padding=(12, 6), font=("Arial", 10), background="#e0e0e0", foreground="#000000")
+style.map("TNotebook.Tab",
+          background=[("active", "#ffffff"), ("!active", "#e0e0e0")],
+          foreground=[("active", "#0078d4"), ("!active", "#000000")],
+          relief=[("selected", "sunken"), ("!selected", "raised")])
+
 # 设置窗口背景色
 root.configure(bg="#f0f0f0")
 
-# 主容器
+# 主容器和选项卡
 container = ttk.Frame(root, padding=12)
 container.grid(row=0, column=0, sticky="nsew")
 root.columnconfigure(0, weight=1)
 root.rowconfigure(0, weight=1)
-container.columnconfigure(1, weight=1)
+
+# 创建选项卡控件
+notebook = ttk.Notebook(container)
+notebook.grid(row=0, column=0, sticky="nsew")
+container.columnconfigure(0, weight=1)
+container.rowconfigure(0, weight=1)
+
+# 创建选项卡页面
+split_tab = ttk.Frame(notebook)
+merge_tab = ttk.Frame(notebook)
+preview_tab = ttk.Frame(notebook)
+settings_tab = ttk.Frame(notebook)
+
+# 如果 EPUB 库可用，添加 EPUB 转换选项卡
+if EPUB_LIBS_AVAILABLE:
+    epub_tab = ttk.Frame(notebook)
+
+# 添加选项卡到笔记本
+notebook.add(split_tab, text="PDF 拆分")
+notebook.add(merge_tab, text="PDF 合并")
+notebook.add(preview_tab, text="PDF 预览")
+if EPUB_LIBS_AVAILABLE:
+    notebook.add(epub_tab, text="EPUB 转换")
+notebook.add(settings_tab, text="设置")
 
 # 主题开关变量
 theme_dark_var = tk.BooleanVar(value=False)
 
+# PDF 拆分选项卡内容
 # 文件区域
-files_frame = ttk.LabelFrame(container, text="文件")
+files_frame = ttk.LabelFrame(split_tab, text="文件")
 files_frame.grid(row=0, column=0, columnspan=3, sticky="ew", padx=4, pady=(0,8))
 for c in range(3):
     files_frame.columnconfigure(c, weight=1 if c == 1 else 0)
@@ -1682,9 +1714,343 @@ preview_btn.grid(row=2, column=2, padx=8, pady=4)
 preview_btn.configure(state="disabled")  # 初始禁用，选择文件后启用
 
 # 拆分区域
-split_frame = ttk.LabelFrame(container, text="拆分")
+split_frame = ttk.LabelFrame(split_tab, text="拆分")
 split_frame.grid(row=1, column=0, columnspan=3, sticky="ew", padx=4, pady=4)
 split_frame.columnconfigure(1, weight=1)
+
+# 配置 split_tab 的列宽
+split_tab.columnconfigure(1, weight=1)
+
+# PDF 合并选项卡内容
+merge_frame = ttk.LabelFrame(merge_tab, text="PDF 合并")
+merge_frame.grid(row=0, column=0, sticky="nsew", padx=4, pady=4)
+merge_tab.columnconfigure(0, weight=1)
+merge_tab.rowconfigure(0, weight=1)
+merge_frame.columnconfigure(0, weight=1)
+merge_frame.rowconfigure(0, weight=1)
+
+# 文件列表
+merge_listbox = tk.Listbox(merge_frame, selectmode=tk.EXTENDED)
+merge_listbox.grid(row=0, column=0, sticky="nsew", padx=4, pady=4)
+
+# 滚动条
+merge_scrollbar = ttk.Scrollbar(merge_frame, orient="vertical", command=merge_listbox.yview)
+merge_scrollbar.grid(row=0, column=1, sticky="ns", pady=4)
+merge_listbox.configure(yscrollcommand=merge_scrollbar.set)
+
+# 按钮区域
+merge_buttons_frame = ttk.Frame(merge_frame)
+merge_buttons_frame.grid(row=1, column=0, columnspan=2, sticky="ew", padx=4, pady=4)
+for i in range(8):
+    merge_buttons_frame.columnconfigure(i, weight=1)
+
+# 添加文件
+merge_add_btn = ttk.Button(merge_buttons_frame, text="添加文件")
+merge_add_btn.grid(row=0, column=0, padx=4)
+
+# 移除选中
+merge_remove_btn = ttk.Button(merge_buttons_frame, text="移除选中")
+merge_remove_btn.grid(row=0, column=1, padx=4)
+
+# 上移
+merge_up_btn = ttk.Button(merge_buttons_frame, text="上移")
+merge_up_btn.grid(row=0, column=2, padx=4)
+
+# 下移
+merge_down_btn = ttk.Button(merge_buttons_frame, text="下移")
+merge_down_btn.grid(row=0, column=3, padx=4)
+
+# 清空
+merge_clear_btn = ttk.Button(merge_buttons_frame, text="清空")
+merge_clear_btn.grid(row=0, column=4, padx=4)
+
+# 分割线
+ttk.Separator(merge_buttons_frame).grid(row=0, column=5, sticky="ew", padx=8)
+
+# 开始合并
+merge_start_btn = ttk.Button(merge_buttons_frame, text="开始合并")
+merge_start_btn.grid(row=0, column=6, padx=4)
+
+# 合并按钮事件处理
+# 添加文件
+def merge_add_files():
+    items = filedialog.askopenfilenames(title="选择 PDF", filetypes=[("PDF files", "*.pdf")])
+    for it in items:
+        merge_listbox.insert("end", it)
+
+# 移除选中
+def merge_remove_selected():
+    sel = list(merge_listbox.curselection())
+    sel.reverse()
+    for i in sel:
+        merge_listbox.delete(i)
+
+# 上移
+def merge_move_up():
+    sel = list(merge_listbox.curselection())
+    if not sel:
+        return
+    for i in sel:
+        if i == 0:
+            continue
+        txt = merge_listbox.get(i)
+        merge_listbox.delete(i)
+        merge_listbox.insert(i-1, txt)
+    merge_listbox.selection_clear(0, "end")
+    for i in [max(0, s-1) for s in sel]:
+        merge_listbox.selection_set(i)
+
+# 下移
+def merge_move_down():
+    sel = list(merge_listbox.curselection())
+    if not sel:
+        return
+    n = merge_listbox.size()
+    for i in reversed(sel):
+        if i >= n-1:
+            continue
+        txt = merge_listbox.get(i)
+        merge_listbox.delete(i)
+        merge_listbox.insert(i+1, txt)
+    merge_listbox.selection_clear(0, "end")
+    for i in [min(n-1, s+1) for s in sel]:
+        merge_listbox.selection_set(i)
+
+# 清空
+def merge_clear_all():
+    merge_listbox.delete(0, "end")
+
+# 开始合并
+def merge_start():
+    files = list(merge_listbox.get(0, "end"))
+    if not files:
+        messagebox.showerror("错误", "请先添加要合并的 PDF")
+        return
+    out = filedialog.asksaveasfilename(defaultextension=".pdf", filetypes=[("PDF files", "*.pdf")], title="保存合并后的 PDF")
+    if not out:
+        return
+    def task():
+        try:
+            merge_pdfs_with_progress(files, out)
+        except Exception as e:
+            post_error(e)
+    start_running_ui()
+    threading.Thread(target=task, daemon=True).start()
+
+# 绑定按钮事件
+merge_add_btn.configure(command=merge_add_files)
+merge_remove_btn.configure(command=merge_remove_selected)
+merge_up_btn.configure(command=merge_move_up)
+merge_down_btn.configure(command=merge_move_down)
+merge_clear_btn.configure(command=merge_clear_all)
+merge_start_btn.configure(command=merge_start)
+
+# 简单拖拽排序
+merge_drag_data = {"index": None}
+def merge_on_start_drag(event):
+    merge_drag_data["index"] = merge_listbox.nearest(event.y)
+def merge_on_drag_motion(event):
+    idx = merge_drag_data.get("index")
+    if idx is None:
+        return
+    i = merge_listbox.nearest(event.y)
+    if i != idx and 0 <= idx < merge_listbox.size():
+        txt = merge_listbox.get(idx)
+        merge_listbox.delete(idx)
+        merge_listbox.insert(i, txt)
+        merge_listbox.selection_clear(0, "end")
+        merge_listbox.selection_set(i)
+        merge_drag_data["index"] = i
+merge_listbox.bind("<Button-1>", merge_on_start_drag)
+merge_listbox.bind("<B1-Motion>", merge_on_drag_motion)
+
+# PDF 预览选项卡内容
+preview_frame = ttk.LabelFrame(preview_tab, text="PDF 预览")
+preview_frame.grid(row=0, column=0, sticky="nsew", padx=4, pady=4)
+preview_tab.columnconfigure(0, weight=1)
+preview_tab.rowconfigure(0, weight=1)
+preview_frame.columnconfigure(1, weight=1)
+
+# 预览文件选择
+preview_input_var = tk.StringVar()
+ttk.Label(preview_frame, text="PDF 文件").grid(row=0, column=0, sticky="w", padx=8, pady=6)
+preview_input_entry = ttk.Entry(preview_frame, textvariable=preview_input_var)
+preview_input_entry.grid(row=0, column=1, sticky="ew", padx=4)
+
+# 浏览按钮
+preview_browse_btn = ttk.Button(preview_frame, text="浏览...")
+preview_browse_btn.grid(row=0, column=2, padx=8)
+
+# 预览按钮
+preview_open_btn = ttk.Button(preview_frame, text="打开预览", width=12)
+preview_open_btn.grid(row=1, column=1, sticky="w", padx=4, pady=6)
+
+# 预览选项卡事件处理
+# 浏览文件
+def preview_browse_file():
+    filename = filedialog.askopenfilename(filetypes=[("PDF files", "*.pdf")])
+    if filename:
+        preview_input_var.set(filename)
+
+# 打开预览
+def preview_open():
+    filename = preview_input_var.get().strip()
+    if filename:
+        open_pdf_previewer(filename)
+    else:
+        messagebox.showerror("错误", "请先选择 PDF 文件！")
+
+# 绑定按钮事件
+preview_browse_btn.configure(command=preview_browse_file)
+preview_open_btn.configure(command=preview_open)
+
+# EPUB 转换选项卡内容（如果库可用）
+if EPUB_LIBS_AVAILABLE:
+    epub_frame = ttk.LabelFrame(epub_tab, text="EPUB 转换")
+    epub_frame.grid(row=0, column=0, sticky="nsew", padx=4, pady=4)
+    epub_tab.columnconfigure(0, weight=1)
+    epub_tab.rowconfigure(0, weight=1)
+    epub_frame.columnconfigure(1, weight=1)
+    
+    # EPUB 文件选择
+    epub_input_var = tk.StringVar()
+    ttk.Label(epub_frame, text="输入 EPUB 文件").grid(row=0, column=0, sticky="w", padx=8, pady=6)
+    epub_input_entry = ttk.Entry(epub_frame, textvariable=epub_input_var)
+    epub_input_entry.grid(row=0, column=1, sticky="ew", padx=4)
+    epub_browse_btn = ttk.Button(epub_frame, text="浏览...")
+    epub_browse_btn.grid(row=0, column=2, padx=8)
+    
+    # PDF 输出路径
+    epub_output_var = tk.StringVar()
+    ttk.Label(epub_frame, text="输出 PDF 文件").grid(row=1, column=0, sticky="w", padx=8, pady=6)
+    epub_output_entry = ttk.Entry(epub_frame, textvariable=epub_output_var)
+    epub_output_entry.grid(row=1, column=1, sticky="ew", padx=4)
+    epub_output_btn = ttk.Button(epub_frame, text="浏览...")
+    epub_output_btn.grid(row=1, column=2, padx=8)
+    
+    # 纸张大小选择
+    epub_paper_var = tk.StringVar(value="a4")
+    ttk.Label(epub_frame, text="纸张大小").grid(row=2, column=0, sticky="w", padx=8, pady=6)
+    epub_paper_combo = ttk.Combobox(epub_frame, textvariable=epub_paper_var, values=["a4", "a5", "letter", "legal"])
+    epub_paper_combo.grid(row=2, column=1, sticky="w", padx=4)
+    epub_paper_combo.configure(state="readonly")
+    
+    # 转换按钮
+    epub_convert_btn = ttk.Button(epub_frame, text="转换 EPUB 为 PDF")
+    epub_convert_btn.grid(row=3, column=1, sticky="w", padx=4, pady=6)
+    
+    # 批量转换按钮
+    epub_batch_btn = ttk.Button(epub_frame, text="批量转换 EPUB")
+    epub_batch_btn.grid(row=3, column=1, sticky="e", padx=4, pady=6)
+    
+    # EPUB 转换选项卡事件处理
+    # 浏览 EPUB 文件
+    def epub_browse_input():
+        filename = filedialog.askopenfilename(filetypes=[("EPUB files", "*.epub")])
+        if filename:
+            epub_input_var.set(filename)
+            # 自动填充输出名
+            base_dir = os.path.dirname(filename)
+            base_name = os.path.splitext(os.path.basename(filename))[0]
+            suggested = os.path.join(base_dir, f"{base_name}.pdf")
+            if not epub_output_var.get().strip():
+                epub_output_var.set(suggested)
+    
+    # 浏览输出路径
+    def epub_browse_output():
+        filename = filedialog.asksaveasfilename(defaultextension=".pdf", filetypes=[("PDF files", "*.pdf")])
+        if filename:
+            epub_output_var.set(filename)
+    
+    # 转换 EPUB 为 PDF
+    def epub_convert():
+        epub_path = epub_input_var.get().strip()
+        pdf_path = epub_output_var.get().strip()
+        paper_size = epub_paper_var.get().strip()
+        
+        if not epub_path:
+            messagebox.showerror("错误", "请先选择 EPUB 文件！")
+            return
+        if not pdf_path:
+            messagebox.showerror("错误", "请先选择输出 PDF 路径！")
+            return
+        
+        def task():
+            try:
+                ctx = build_tk_task_context()
+                epub_to_pdf_python(ctx, epub_path, pdf_path, paper_size)
+            except Exception as e:
+                post_error(e)
+        
+        start_running_ui()
+        threading.Thread(target=task, daemon=True).start()
+    
+    # 批量转换 EPUB
+    def epub_batch_convert():
+        epub_files = filedialog.askopenfilenames(title="选择 EPUB 文件", filetypes=[("EPUB files", "*.epub")])
+        if not epub_files:
+            return
+        
+        output_dir = filedialog.askdirectory(title="选择输出目录")
+        if not output_dir:
+            return
+        
+        paper_size = epub_paper_var.get().strip()
+        
+        def task():
+            try:
+                ctx = build_tk_task_context()
+                batch_epub_to_pdf(ctx, epub_files, output_dir, paper_size)
+            except Exception as e:
+                post_error(e)
+        
+        start_running_ui()
+        threading.Thread(target=task, daemon=True).start()
+    
+    # 绑定按钮事件
+epub_browse_btn.configure(command=epub_browse_input)
+epub_output_btn.configure(command=epub_browse_output)
+epub_convert_btn.configure(command=epub_convert)
+epub_batch_btn.configure(command=epub_batch_convert)
+
+# 设置选项卡内容
+settings_frame = ttk.LabelFrame(settings_tab, text="设置")
+settings_frame.grid(row=0, column=0, sticky="nsew", padx=4, pady=4)
+settings_tab.columnconfigure(0, weight=1)
+settings_tab.rowconfigure(0, weight=1)
+settings_frame.columnconfigure(1, weight=1)
+
+# 主题设置
+ttk.Label(settings_frame, text="主题").grid(row=0, column=0, sticky="w", padx=8, pady=6)
+theme_frame = ttk.Frame(settings_frame)
+theme_frame.grid(row=0, column=1, sticky="w", padx=4)
+ttk.Button(theme_frame, text="浅色", command=toggle_theme_light).pack(side="left", padx=4)
+ttk.Button(theme_frame, text="深色", command=toggle_theme_dark).pack(side="left", padx=4)
+
+# 语言设置
+ttk.Label(settings_frame, text="语言").grid(row=1, column=0, sticky="w", padx=8, pady=6)
+lang_frame = ttk.Frame(settings_frame)
+lang_frame.grid(row=1, column=1, sticky="w", padx=4)
+ttk.Button(lang_frame, text="中文", command=lambda: set_language("zh")).pack(side="left", padx=4)
+ttk.Button(lang_frame, text="English", command=lambda: set_language("en")).pack(side="left", padx=4)
+
+# 命名模板设置
+ttk.Label(settings_frame, text="命名模板").grid(row=2, column=0, sticky="w", padx=8, pady=6)
+name_template_var = tk.StringVar(value="{name}_{start}-{end}.pdf")
+template_entry = ttk.Entry(settings_frame, textvariable=name_template_var)
+template_entry.grid(row=2, column=1, sticky="ew", padx=4)
+template_help = ttk.Label(settings_frame, text="{name}=文件名, {start}=开始页, {end}=结束页, {index}=序号", foreground="#666666")
+template_help.grid(row=3, column=1, sticky="w", padx=4, pady=(0,6))
+
+# 保存设置按钮
+save_settings_btn = ttk.Button(settings_frame, text="保存设置")
+save_settings_btn.grid(row=4, column=1, sticky="w", padx=4, pady=6)
+
+def save_settings_from_tab():
+    save_settings()
+    messagebox.showinfo("提示", "设置已保存！")
+
+save_settings_btn.configure(command=save_settings_from_tab)
 
 ttk.Label(split_frame, text="页码范围").grid(row=0, column=0, sticky="w", padx=8, pady=6)
 RANGES_PLACEHOLDER = "例如：1-3,5,7-9（支持中文逗号）"

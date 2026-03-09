@@ -4,6 +4,7 @@ import os
 import re
 
 from task_context import TaskContext, TaskCancelledError
+from services.pdf_service import normalize_page_ranges
 
 
 def split_pdf_by_ranges(
@@ -25,20 +26,28 @@ def split_pdf_by_ranges(
         reader = PdfReader(input_path)
         total_pages = len(reader.pages)
 
-        writer = PdfWriter()
+        normalized_ranges = normalize_page_ranges(ranges, total_pages)
+
+        if not normalized_ranges:
+            raise ValueError("没有有效的页码范围可导出")
 
         # 计算总工作量（用于进度）
-        total_units = sum(end - start + 1 for start, end in ranges)
+        total_units = sum(end - start + 1 for start, end in normalized_ranges)
         completed_units = 0
-
-        if total_units <= 0:
-            raise ValueError("拆分范围为空")
 
         ctx.report_progress(0, "开始拆分 PDF")
 
-        for start, end in ranges:
-            if start < 1 or end > total_pages or start > end:
-                raise ValueError(f"非法页码范围: {start}-{end}")
+        base_dir = os.path.dirname(output_path) or os.getcwd()
+        base_name, ext = os.path.splitext(os.path.basename(output_path))
+        if not ext:
+            ext = ".pdf"
+
+        exported_paths: List[str] = []
+
+        for start, end in normalized_ranges:
+            ctx.check_cancelled()
+
+            writer = PdfWriter()
 
             for page_index in range(start - 1, end):
                 ctx.check_cancelled()
@@ -53,13 +62,24 @@ def split_pdf_by_ranges(
                     f"处理中：第 {page_index + 1} 页 / 共 {total_pages}  页"
                 )
 
-        ctx.check_cancelled()
+            if len(normalized_ranges) == 1:
+                current_output_path = output_path
+            else:
+                current_output_path = os.path.join(
+                    base_dir,
+                    f"{base_name}_{start}-{end}{ext}",
+                )
 
-        with open(output_path, "wb") as f:
-            writer.write(f)
+            with open(current_output_path, "wb") as f:
+                writer.write(f)
+
+            exported_paths.append(current_output_path)
 
         ctx.report_progress(100, "拆分完成")
-        ctx.report_done("PDF 拆分完成", output_path)
+        if len(exported_paths) == 1:
+            ctx.report_done("PDF 拆分完成", exported_paths[0])
+        else:
+            ctx.report_done(f"已导出 {len(exported_paths)} 个 PDF 文件", exported_paths)
 
     except TaskCancelledError:
         ctx.report_done("操作已取消", None)
@@ -457,7 +477,10 @@ def split_pdf_by_chapters(
             # 生成输出文件名
             base_dir = os.path.dirname(output_path)
             base_name = os.path.splitext(os.path.basename(output_path))[0]
-            unit_output_name = f"第{unit_start_chapter}-{unit_end_chapter}章+{base_name}.pdf"
+            if unit_start_chapter == unit_end_chapter:
+                unit_output_name = f"第{unit_start_chapter}章_{base_name}.pdf"
+            else:
+                unit_output_name = f"第{unit_start_chapter}-{unit_end_chapter}章_{base_name}.pdf"
             unit_output_path = os.path.join(base_dir, unit_output_name)
 
             # 写入文件
@@ -467,7 +490,10 @@ def split_pdf_by_chapters(
             output_files.append(unit_output_path)
 
         ctx.report_progress(100, "拆分完成")
-        ctx.report_done(f"已按每{chapters_per_unit}章为一个单元拆分 PDF 文件", output_files[0] if output_files else None)
+        if chapters_per_unit == 1:
+            ctx.report_done("已按章节拆分 PDF 文件", output_files[0] if output_files else None)
+        else:
+            ctx.report_done(f"已按每{chapters_per_unit}章为一个单元拆分 PDF 文件", output_files[0] if output_files else None)
 
     except TaskCancelledError:
         ctx.report_done("操作已取消", None)

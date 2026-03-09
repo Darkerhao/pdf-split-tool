@@ -3,9 +3,12 @@
   "output": "D:/夸克网盘下载/微信读书TOP200精选书单/批量转换的pdf\\6追风筝的人——卡勒德·胡赛尼_split.pdf",
   "dark": false,
   "lang": "en",
-  "recent": [],
+  "recent": [
+    "D:\\夸克网盘下载\\微信读书TOP200精选书单\\批量转换的pdf\\6追风筝的人——卡勒德·胡赛尼.pdf",
+    "D:\\夸克网盘下载\\微信读书TOP200精选书单\\批量转换的pdf\\22我与地坛.pdf"
+  ],
   "template": "{name}_{start}-{end}.pdf",
-  "epub_input": "D:/夸克网盘下载/微信读书TOP200精选书单/30红楼梦.epub",
-  "epub_output": "D:/夸克网盘下载/微信读书TOP200精选书单/30红楼梦.pdf",
+  "epub_input": "",
+  "epub_output": "",
   "epub_paper": "a4"
 }

@@ -1,0 +1,326 @@
+import os
+import re
+import shutil
+import subprocess
+import traceback
+
+from task_context import TaskContext
+from services.pdf_service import sanitize_filename
+
+
+try:
+    from ebooklib import epub
+    from reportlab.pdfgen import canvas
+    from reportlab.lib.pagesizes import A4, A5, letter, legal
+    import html2text
+
+    EPUB_LIBS_AVAILABLE = True
+except ImportError:
+    EPUB_LIBS_AVAILABLE = False
+
+
+def find_ebook_convert() -> str:
+    """查找 Calibre 的 ebook-convert 可执行文件路径。"""
+    path = shutil.which("ebook-convert")
+    if path:
+        return path
+
+    candidates = [
+        os.path.join("C:\\Program Files\\Calibre", "ebook-convert.exe"),
+        os.path.join("C:\\Program Files (x86)\\Calibre", "ebook-convert.exe"),
+        os.path.join("C:\\Program Files\\Calibre2", "ebook-convert.exe"),
+    ]
+    for candidate in candidates:
+        if os.path.exists(candidate):
+            return candidate
+    return ""
+
+
+def epub_to_pdf_python(
+    ctx: TaskContext,
+    epub_path: str,
+    pdf_path: str,
+    paper_size: str = "a4",
+):
+    """使用 Python 库将 EPUB 转换为 PDF（不依赖 Calibre）。"""
+    if not EPUB_LIBS_AVAILABLE:
+        raise RuntimeError("缺少必要的 Python 库\n请安装：pip install ebooklib reportlab html2text")
+
+    paper_sizes = {
+        "a4": A4,
+        "a5": A5,
+        "letter": letter,
+        "legal": legal,
+    }
+    page_size = paper_sizes.get(paper_size.lower(), A4)
+
+    ctx.report_progress(20, "正在读取 EPUB 文件...")
+    book = epub.read_epub(epub_path)
+
+    pdf_canvas = canvas.Canvas(pdf_path, pagesize=page_size)
+    _, height = page_size
+
+    try:
+        pdf_canvas.setFont("Helvetica", 12)
+    except Exception:
+        try:
+            pdf_canvas.setFont("Arial", 12)
+        except Exception:
+            pdf_canvas.setFont("Helvetica", 12)
+
+    html_converter = html2text.HTML2Text()
+    html_converter.ignore_links = True
+    html_converter.ignore_images = True
+
+    y_position = height - 50
+    line_height = 14
+    margin = 50
+
+    total_items = sum(1 for item in book.get_items() if item.get_type() == epub.ITEM_DOCUMENT)
+    processed_items = 0
+
+    for item in book.get_items():
+        ctx.check_cancelled()
+
+        if item.get_type() != epub.ITEM_DOCUMENT:
+            continue
+
+        processed_items += 1
+        item_progress = (processed_items / total_items) * 60 if total_items else 60
+        ctx.report_progress(20 + item_progress, f"正在处理章节 {processed_items}/{total_items}")
+
+        raw_content = item.get_content()
+        content = None
+
+        for encoding in ["utf-8", "gbk", "gb2312", "latin-1", "cp1252", "utf-16"]:
+            try:
+                content = raw_content.decode(encoding)
+                break
+            except (UnicodeDecodeError, UnicodeError, LookupError):
+                continue
+
+        if content is None:
+            try:
+                content = raw_content.decode("utf-8", errors="ignore")
+            except Exception:
+                content = str(raw_content, errors="ignore")
+
+        text = html_converter.handle(content)
+        text = re.sub(r"\n\s*\n", "\n\n", text)
+
+        for line in text.split("\n"):
+            ctx.check_cancelled()
+
+            line = line.strip()
+            if not line:
+                y_position -= line_height
+                continue
+
+            if y_position < margin:
+                pdf_canvas.showPage()
+                y_position = height - 50
+
+            try:
+                safe_line = line.replace("\x00", "").replace("\r", "").strip()
+                if not safe_line:
+                    y_position -= line_height
+                    continue
+
+                if len(safe_line) > 80:
+                    words = safe_line.split()
+                    current_line = ""
+                    for word in words:
+                        if len(current_line + " " + word) > 80:
+                            if current_line:
+                                pdf_canvas.drawString(margin, y_position, current_line)
+                                y_position -= line_height
+                                if y_position < margin:
+                                    pdf_canvas.showPage()
+                                    y_position = height - 50
+                            current_line = word
+                        else:
+                            current_line += (" " + word) if current_line else word
+                    if current_line:
+                        pdf_canvas.drawString(margin, y_position, current_line)
+                        y_position -= line_height
+                else:
+                    pdf_canvas.drawString(margin, y_position, safe_line)
+                    y_position -= line_height
+            except Exception:
+                y_position -= line_height
+                continue
+
+    ctx.report_progress(90, "正在保存 PDF 文件...")
+    pdf_canvas.save()
+    ctx.report_done(f"已完成 EPUB 转 PDF：{pdf_path}", [pdf_path])
+
+
+def do_epub_convert_with_progress(
+    ctx: TaskContext,
+    epub_path: str,
+    pdf_path: str,
+    paper_size: str = "a4",
+):
+    """将 EPUB 转为 PDF，优先使用 Python 库，失败则尝试 Calibre。"""
+    try:
+        python_error = None
+
+        try:
+            ctx.report_progress(10, f"尝试使用 Python 库转换... (库可用: {EPUB_LIBS_AVAILABLE})")
+            epub_to_pdf_python(ctx, epub_path, pdf_path, paper_size)
+            ctx.report_done(f"EPUB 文件 '{os.path.basename(epub_path)}' 已成功转换为 PDF。", [pdf_path])
+            return
+        except Exception as exc:
+            python_error = str(exc)
+            ctx.report_progress(20, f"Python 库转换失败：{python_error[:50]}...")
+
+        exe = find_ebook_convert()
+        if not exe:
+            error_msg = "转换失败：\n"
+            if python_error:
+                error_msg += f"1. Python 库错误：{python_error}\n"
+            error_msg += "2. 未找到 Calibre ebook-convert\n\n"
+            error_msg += "解决方案：\n"
+            error_msg += "- 安装 Python 库：pip install ebooklib reportlab html2text\n"
+            error_msg += "- 或安装 Calibre：https://calibre-ebook.com/download"
+            ctx.report_error(error_msg)
+            return
+
+        os.makedirs(os.path.dirname(pdf_path) or os.getcwd(), exist_ok=True)
+        args = [exe, epub_path, pdf_path, "--paper-size", paper_size]
+        try:
+            proc = subprocess.Popen(
+                args,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
+                text=False,
+                bufsize=1,
+            )
+        except Exception as exc:
+            ctx.report_error(f"启动 Calibre 转换失败：{str(exc)}")
+            return
+
+        last_pct = -1
+        while True:
+            ctx.check_cancelled()
+            if proc.poll() is not None:
+                break
+
+            line_bytes = proc.stdout.readline() if proc.stdout else b""
+            if not line_bytes:
+                continue
+
+            try:
+                line = line_bytes.decode("utf-8")
+            except UnicodeDecodeError:
+                line = line_bytes.decode("gbk", errors="ignore")
+            except Exception:
+                line = str(line_bytes, errors="ignore")
+
+            match = re.search(r"(\d{1,3})%", line)
+            if match:
+                try:
+                    pct = int(match.group(1))
+                    if 0 <= pct <= 100 and pct != last_pct:
+                        last_pct = pct
+                        ctx.report_progress(pct, f"转换进度 {pct}%")
+                except Exception:
+                    pass
+            elif last_pct >= 0:
+                ctx.report_progress(last_pct, line.strip()[:80])
+
+        code = proc.poll()
+        if code == 0:
+            ctx.report_done(f"已完成 EPUB 转 PDF：{pdf_path}", [pdf_path])
+        else:
+            ctx.report_error("Calibre 转换失败，请检查 EPUB 文件与输出路径是否有效。")
+
+    except Exception as final_error:
+        error_details = traceback.format_exc()
+        ctx.report_error(
+            f"转换过程中发生意外错误：\n{final_error}\n\n详细信息：\n{error_details}\n\n请检查文件或尝试其他转换方式。"
+        )
+
+
+def batch_epub_to_pdf(
+    ctx: TaskContext,
+    epub_files: list[str],
+    output_dir: str,
+    paper_size: str = "a4",
+    filename_template: str = "{name}.pdf",
+):
+    """批量将 EPUB 文件转换为 PDF。"""
+    total_files = len(epub_files)
+    if total_files == 0:
+        ctx.report_done("没有 EPUB 文件需要转换", None)
+        return
+
+    os.makedirs(output_dir, exist_ok=True)
+
+    success_count = 0
+    failed_count = 0
+    failed_files: list[tuple[str, str]] = []
+    success_files: list[str] = []
+
+    try:
+        for index, epub_path in enumerate(epub_files):
+            ctx.check_cancelled()
+            file_name = os.path.basename(epub_path)
+
+            def make_sub_progress_callback(file_index: int):
+                def _report(sub_progress: float, msg: str):
+                    overall = ((file_index + sub_progress / 100.0) / total_files) * 100.0
+                    ctx.report_progress(overall, f"[{file_index + 1}/{total_files}] {file_name}：{msg}")
+
+                return _report
+
+            sub_ctx = TaskContext(
+                is_cancelled=ctx.is_cancelled,
+                report_progress=make_sub_progress_callback(index),
+                report_done=lambda *_: None,
+                report_error=lambda err: ctx.report_error(err),
+            )
+
+            try:
+                base_name = os.path.splitext(os.path.basename(epub_path))[0]
+                try:
+                    pdf_filename = filename_template.format(name=base_name)
+                except Exception:
+                    pdf_filename = f"{base_name}.pdf"
+
+                pdf_filename = sanitize_filename(pdf_filename)
+                pdf_path = os.path.join(output_dir, pdf_filename)
+
+                do_epub_convert_with_progress(sub_ctx, epub_path, pdf_path, paper_size)
+                success_count += 1
+                success_files.append(pdf_path)
+            except Exception as exc:
+                failed_count += 1
+                failed_files.append((epub_path, str(exc)))
+                sub_ctx.report_progress(100, f"转换失败：{str(exc)}")
+                continue
+
+        result_message = f"批量转换完成！\n成功：{success_count} 个文件\n失败：{failed_count} 个文件\n\n"
+
+        if success_files:
+            result_message += "成功转换的文件：\n"
+            for index, file in enumerate(success_files[:5], 1):
+                result_message += f"{index}. {os.path.basename(file)}\n"
+            if len(success_files) > 5:
+                result_message += f"... 等 {len(success_files) - 5} 个文件\n"
+
+        if failed_files:
+            result_message += "\n转换失败的文件：\n"
+            for index, (file, error) in enumerate(failed_files[:5], 1):
+                result_message += f"{index}. {os.path.basename(file)}\n   错误：{error[:100]}...\n"
+            if len(failed_files) > 5:
+                result_message += f"... 等 {len(failed_files) - 5} 个文件\n"
+
+        ctx.report_progress(100, "批量转换完成")
+        ctx.report_done(result_message, success_files[:1])
+
+    except Exception as final_error:
+        error_details = traceback.format_exc()
+        ctx.report_error(
+            f"批量转换过程中发生意外错误：\n{final_error}\n\n详细信息：\n{error_details}\n\n请检查文件或尝试其他转换方式。"
+        )

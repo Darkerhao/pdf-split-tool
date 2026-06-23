@@ -4,6 +4,8 @@
 作为模块导入时仅暴露核心服务函数，避免导入阶段直接创建 Tk 窗口。
 """
 
+__version__ = "0.0.0"  # CI 构建时由版本注入脚本替换
+
 from importlib import import_module
 
 from services.epub_service import (

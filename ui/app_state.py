@@ -124,7 +124,8 @@ def set_language_ui(lang: str, strings: dict, current_lang: str, root, recent_bt
 
     try:
         if title:
-            root.title(title)
+            from split_pdf_gui import __version__
+            root.title(f"{title} v{__version__}")
     except Exception:
         pass
 

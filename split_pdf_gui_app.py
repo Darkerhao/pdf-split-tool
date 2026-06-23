@@ -466,7 +466,9 @@ if DND_AVAILABLE:
 else:
     root = tk.Tk()
 
-root.title(T("title"))
+from split_pdf_gui import __version__
+
+root.title(f"{T('title')} v{__version__}")
 root.geometry("1000x820")
 root.minsize(900, 700)
 

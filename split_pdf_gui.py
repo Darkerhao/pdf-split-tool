@@ -1,3 +1,11 @@
+"""GUI 启动入口与可导入兼容层。
+
+作为脚本执行时启动 `split_pdf_gui_app`。
+作为模块导入时仅暴露核心服务函数，避免导入阶段直接创建 Tk 窗口。
+"""
+
+from importlib import import_module
+
 from services.epub_service import (
     EPUB_LIBS_AVAILABLE,
     batch_epub_to_pdf,
@@ -15,7 +23,7 @@ from services.pdf_service import (
 
 
 def main():
-    import split_pdf_gui_app  # noqa: F401
+    return import_module("split_pdf_gui_app")
 
 
 __all__ = [

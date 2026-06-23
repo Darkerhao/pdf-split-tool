@@ -34,7 +34,7 @@ def open_pdf_previewer(master, pdf_path: str):
         zoom_frame = ttk.Frame(toolbar_frame)
         zoom_frame.pack(side="right", padx=10)
 
-        ttk.Label(zoom_frame, text="缩放:").pack(side="left", padx=2)
+        ttk.Label(zoom_frame, text="缩放：").pack(side="left", padx=2)
 
         fullscreen = False
 
@@ -87,18 +87,18 @@ def open_pdf_previewer(master, pdf_path: str):
                     canvas.image = photo
                     canvas.configure(scrollregion=canvas.bbox("all"))
                 except Exception as exc:
-                    canvas.create_text(400, 300, text=f"渲染失败: {str(exc)}", font=("Segoe UI", 12), fill="red", justify="center")
+                    canvas.create_text(400, 300, text=f"渲染失败：{str(exc)}", font=("Segoe UI", 12), fill="red", justify="center")
             else:
                 try:
                     from PIL import Image, ImageDraw, ImageTk
 
                     img = Image.new("RGB", (800, 600), color="#ffffff")
                     drawer = ImageDraw.Draw(img)
-                    drawer.text((100, 100), f"PDF页面 {current_page + 1}", fill=(0, 0, 0))
-                    drawer.text((100, 120), f"总页数: {total_pages}", fill=(0, 0, 0))
-                    drawer.text((100, 140), "注意: 这是一个简化的PDF预览", fill=(0, 0, 0))
-                    drawer.text((100, 160), "完整的PDF渲染需要安装PyMuPDF库", fill=(0, 0, 0))
-                    drawer.text((100, 180), "请运行: pip install PyMuPDF", fill=(0, 0, 0))
+                    drawer.text((100, 100), f"PDF 页面 {current_page + 1}", fill=(0, 0, 0))
+                    drawer.text((100, 120), f"总页数：{total_pages}", fill=(0, 0, 0))
+                    drawer.text((100, 140), "注意：这是一个简化版 PDF 预览", fill=(0, 0, 0))
+                    drawer.text((100, 160), "完整渲染需要安装 PyMuPDF", fill=(0, 0, 0))
+                    drawer.text((100, 180), "请运行：pip install PyMuPDF", fill=(0, 0, 0))
 
                     width, height = img.size
                     new_width = int(width * zoom)
@@ -113,13 +113,13 @@ def open_pdf_previewer(master, pdf_path: str):
                     canvas.create_text(
                         400,
                         300,
-                        text=f"PDF页面 {current_page + 1}\n总页数: {total_pages}\n\n注意: 无法渲染PDF页面\n请安装必要的库: Pillow, PyMuPDF",
+                        text=f"PDF 页面 {current_page + 1}\n总页数：{total_pages}\n\n注意：无法渲染 PDF 页面\n请安装必要的库：Pillow、PyMuPDF",
                         font=("Segoe UI", 12),
                         fill="black",
                         justify="center",
                     )
                 except Exception as exc:
-                    canvas.create_text(400, 300, text=f"无法显示页面: {str(exc)}", font=("Segoe UI", 12), fill="red", justify="center")
+                    canvas.create_text(400, 300, text=f"无法显示页面：{str(exc)}", font=("Segoe UI", 12), fill="red", justify="center")
 
         def set_zoom(level: float):
             nonlocal zoom
@@ -136,10 +136,10 @@ def open_pdf_previewer(master, pdf_path: str):
             fullscreen = not fullscreen
             preview_window.attributes("-fullscreen", fullscreen)
 
-        ttk.Button(nav_frame, text="首页", command=lambda: show_page(0)).pack(side="left", padx=2)
+        ttk.Button(nav_frame, text="第一页", command=lambda: show_page(0)).pack(side="left", padx=2)
         ttk.Button(nav_frame, text="上一页", command=lambda: show_page(current_page - 1)).pack(side="left", padx=2)
         ttk.Button(nav_frame, text="下一页", command=lambda: show_page(current_page + 1)).pack(side="left", padx=2)
-        ttk.Button(nav_frame, text="末页", command=lambda: show_page(total_pages - 1)).pack(side="left", padx=2)
+        ttk.Button(nav_frame, text="最后一页", command=lambda: show_page(total_pages - 1)).pack(side="left", padx=2)
 
         ttk.Button(rotate_frame, text="向左旋转", command=lambda: rotate_page(-90)).pack(side="left", padx=2)
         ttk.Button(rotate_frame, text="向右旋转", command=lambda: rotate_page(90)).pack(side="left", padx=2)
@@ -150,7 +150,7 @@ def open_pdf_previewer(master, pdf_path: str):
         ttk.Button(zoom_frame, text="150%", command=lambda: set_zoom(1.5)).pack(side="left", padx=2)
         ttk.Button(zoom_frame, text="200%", command=lambda: set_zoom(2.0)).pack(side="left", padx=2)
 
-        ttk.Button(toolbar_frame, text="全屏", command=toggle_fullscreen).pack(side="right", padx=10)
+        ttk.Button(toolbar_frame, text="切换全屏", command=toggle_fullscreen).pack(side="right", padx=10)
 
         try:
             import fitz
@@ -162,7 +162,7 @@ def open_pdf_previewer(master, pdf_path: str):
             total_pages = len(reader.pages)
             doc = None
         except Exception as exc:
-            messagebox.showerror("错误", f"无法打开PDF文件: {str(exc)}")
+            messagebox.showerror("错误", f"无法打开 PDF 文件：{str(exc)}")
             return
 
         show_page(0)
@@ -198,4 +198,4 @@ def open_pdf_previewer(master, pdf_path: str):
         canvas.bind("<MouseWheel>", on_mouse_wheel)
         preview_window.protocol("WM_DELETE_WINDOW", on_close)
     except Exception as exc:
-        messagebox.showerror("错误", f"打开PDF预览失败: {str(exc)}")
+        messagebox.showerror("错误", f"打开 PDF 预览失败：{str(exc)}")

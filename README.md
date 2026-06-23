@@ -3,15 +3,17 @@ PDF 工具箱（拆分 / 合并 / 预览）
 项目简介
 本项目提供一个简单易用的 GUI 工具，支持：
 - 按范围拆分 PDF（多范围=多文件；单范围=单文件）
+- 按章节拆分 PDF（支持手动章节范围与自动章节拆分）
 - 拆成单页（每页生成一个 PDF）
 - 预览拆分结果（显示将生成几个文件、每个文件的页码范围与页数）
 - 合并多个 PDF 到一个 PDF
-- EPUB 转 PDF（基于 Calibre 的 ebook-convert，带进度与可取消）
+- EPUB 转 PDF（支持单文件/批量，优先使用 Python 库，失败后回退到 Calibre，带进度与可取消）
 - 拖拽导入输入文件（可选安装 tkinterdnd2）
 - 最近文件菜单（记忆最近 8 个）
 - 多语言切换（中文/英文）、快捷键支持
 - 合并管理器（可拖拽排序）
 - 分段导出命名模板（自定义文件名格式）
+- 打开输出目录
 
 运行方式
 方式一：直接运行 Python 脚本
@@ -28,7 +30,7 @@ PDF 工具箱（拆分 / 合并 / 预览）
 2) 运行 GUI：
    python split_pdf_gui.py
 3）打包
-  python -m PyInstaller --onefile --noconsole split_pdf_gui.py
+  pyinstaller split_pdf_gui.spec
 
 方式二：使用打包好的可执行文件
 - 双击 dist/split_pdf_gui.exe（如需新版功能，请按“打包为 EXE”章节重新打包）
@@ -44,18 +46,23 @@ PDF 工具箱（拆分 / 合并 / 预览）
 2. 拆成单页
 - 将每一页单独导出为一个 PDF 文件，输出名会在末尾追加 _page_序号
 
-3. 预览拆分结果
+3. 按章节拆分
+- 支持手动填写章节范围并按行导出，每行章节范围生成一个文件
+- 支持自动按章节拆分，适合已有章节结构的 PDF
+
+4. 预览拆分结果
 - 在真正导出前，显示将要生成几个文件、每个文件的页码范围与页数
 - 无效范围会在预览中标注并被跳过
 
-4. 合并 PDF
+5. 合并 PDF
 - 选择多个 PDF 文件，合并为一个 PDF 输出
  - 使用“合并管理器”可添加/移除/上移/下移/拖拽排序，点击“确定合并”开始
 
-5. 拖拽、最近文件、多语言、快捷键
+6. 拖拽、最近文件、多语言、快捷键、输出目录
 - 可把 PDF 直接拖进“输入 PDF 文件”输入框（需安装 tkinterdnd2）
 - 顶部“最近”菜单展示最近 8 个 PDF
 - 语言切换：工具栏右侧语言按钮（中文/EN）
+- 可通过工具栏按钮直接打开当前输出目录
 - 快捷键：
   - Ctrl+P：预览拆分
   - Ctrl+Enter：按范围拆分
@@ -74,6 +81,7 @@ EPUB 转 PDF（GUI）
 2) 选择纸张（a4/a5/letter/legal）
 3) 点击“开始转换”；若系统已安装 Calibre 且 ebook-convert 在 PATH 中，会显示转换进度
 4) 可随时点击“取消运行”中止
+5) 批量转换时，在“批量 EPUB 转 PDF”区块中添加多个 .epub，选择输出目录、纸张与文件名模板后开始转换
 
 注意：
 - 程序会优先尝试使用 Python 库（ebooklib + reportlab）进行转换，无需安装额外软件
@@ -93,8 +101,8 @@ EPUB 转 PDF（GUI）
 2) 使用项目内的 spec 打包（推荐）：
    pyinstaller split_pdf_gui.spec
    生成的可执行文件位于 dist/ 目录
-3) 或者直接命令打包（简化示例）：
-   pyinstaller --noconsole --onefile --name split_pdf_gui split_pdf_gui.py
+3) 或者直接命令打包（需显式补上 GUI 启动模块）：
+   pyinstaller --noconsole --onefile --name split_pdf_gui --hidden-import split_pdf_gui_app split_pdf_gui.py
 
 常见问题
 - 预览显示“超出范围，跳过”：说明输入的起止超出了 PDF 实际页数，导出时会跳过无效段
@@ -118,20 +126,25 @@ PDF Toolbox (Split / Merge / Preview)
 Overview
 This desktop GUI helps you split and merge PDFs with ease. Highlights:
 - Split by ranges (multiple ranges = multiple files; single range = one file)
+- Split by chapters (manual ranges or automatic chapter detection)
 - Split into single pages
 - Preview the output before exporting
 - Merge multiple PDFs into one
+- Convert EPUB to PDF (single file or batch; Python libraries first, Calibre fallback)
 - Drag-and-drop to load input (optional dependency)
 - Recent files menu (remembers last 8)
 - Language switch (ZH/EN) and keyboard shortcuts
 - Merge Manager with drag-to-reorder
 - Naming template for range outputs
+- Open the current output directory from the toolbar
 
 Install & Run
 1) Install dependencies:
    pip install PyPDF2
    # Optional for drag-and-drop
    pip install tkinterdnd2
+   # Optional for EPUB conversion without Calibre
+   pip install ebooklib reportlab html2text
 2) Start the GUI:
    python split_pdf_gui.py
 
@@ -149,12 +162,14 @@ Naming Template
   - index: segment index starting from 1
 
 Build to EXE (optional)
-pyinstaller split_pdf_gui.spec
+- Recommended: `pyinstaller split_pdf_gui.spec`
+- Direct command also works when adding the hidden import:
+  `pyinstaller --noconsole --onefile --name split_pdf_gui --hidden-import split_pdf_gui_app split_pdf_gui.py`
 
 Screenshots / Demo GIF
-- Files placed under `docs/`:
-  - ![Main UI](docs/main-ui.png)
-  - ![Merge Manager](docs/merge-manager.png)
-  - ![Preview](docs/preview.png)
-  - ![Demo](docs/demo.gif)
-- See `docs/README-images.md` for how to capture and replace these placeholders.
+- Expected placeholder files can be placed under `docs/`:
+  - `docs/main-ui.png`
+  - `docs/merge-manager.png`
+  - `docs/preview.png`
+  - `docs/demo.gif`
+- See `docs/README-images.md` for capture guidance.

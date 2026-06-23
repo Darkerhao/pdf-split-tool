@@ -7,6 +7,12 @@ from task_context import TaskContext, TaskCancelledError
 from services.pdf_service import normalize_page_ranges
 
 
+def validate_chapters_per_unit(chapters_per_unit: int) -> int:
+    if chapters_per_unit <= 0:
+        raise ValueError("每个单元的章节数必须大于 0")
+    return chapters_per_unit
+
+
 def split_pdf_by_ranges(
     ctx: TaskContext,
     input_path: str,
@@ -326,6 +332,7 @@ def split_pdf_by_auto_chapters(
     """
 
     try:
+        chapters_per_unit = validate_chapters_per_unit(chapters_per_unit)
         ctx.report_progress(0, "开始自动识别章节结构")
         
         # 提取PDF文本
@@ -418,6 +425,7 @@ def split_pdf_by_chapters(
     """
 
     try:
+        chapters_per_unit = validate_chapters_per_unit(chapters_per_unit)
         reader = PdfReader(input_path)
         total_pages = len(reader.pages)
 

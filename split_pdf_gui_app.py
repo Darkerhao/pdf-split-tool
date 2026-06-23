@@ -13,6 +13,42 @@ import traceback
 from task_context import TaskContext, TaskCancelledError
 from pdf_split_task import split_pdf_by_ranges
 from ui.preview import open_pdf_previewer as show_pdf_previewer
+from ui.merge_tab import build_merge_tab
+from ui.epub_panel import build_epub_panels
+from ui.split_tab import build_split_tab
+from ui.auxiliary_ui import (
+    PreviewTabTexts,
+    SettingsTabTexts,
+    ToolbarTexts,
+    apply_preview_tab_texts,
+    apply_settings_tab_texts,
+    apply_toolbar_texts,
+    build_preview_tab,
+    build_settings_tab,
+    build_toolbar,
+)
+from ui.app_state import (
+    add_recent_file_ui,
+    clear_ranges_ui,
+    helper_equal_k_parts_ui,
+    helper_every_n_pages_ui,
+    open_recent_ui,
+    set_input_file_ui,
+    set_language_ui,
+    update_recent_menu_ui,
+)
+from ui.app_runtime import (
+    ThemeConfig,
+    apply_theme,
+    enqueue_done,
+    enqueue_error,
+    enqueue_progress,
+    load_ui_settings,
+    poll_progress_queue,
+    save_ui_settings,
+    start_running_ui as start_runtime_ui,
+    stop_running_ui as stop_runtime_ui,
+)
 from services.epub_service import (
     EPUB_LIBS_AVAILABLE,
     batch_epub_to_pdf,
@@ -29,7 +65,6 @@ from services.pdf_service import (
 from services.settings_service import (
     AppSettings,
     load_app_settings,
-    push_recent_file,
     save_app_settings,
 )
 
@@ -200,6 +235,26 @@ def merge_pdfs(file_list, output_file):
     except Exception as e:
         messagebox.showerror("错误", str(e))
 
+def merge_pdfs_with_progress(file_list, output_file):
+    if not file_list:
+        raise ValueError("请先添加要合并的 PDF 文件")
+
+    writer = PdfWriter()
+    total_files = len(file_list)
+
+    for index, file_path in enumerate(file_list, start=1):
+        reader = PdfReader(file_path)
+        for page in reader.pages:
+            writer.add_page(page)
+        progress = 90 * index / total_files
+        post_progress(progress, f"正在合并 {index}/{total_files}: {os.path.basename(file_path)}")
+
+    with open(output_file, "wb") as file:
+        writer.write(file)
+
+    post_progress(100, "PDF 合并完成")
+    post_done(f"已合并 {total_files} 个 PDF 文件：{output_file}", [output_file])
+
 def set_input_file(filename: str):
     if not filename:
         return
@@ -330,11 +385,26 @@ def on_cancel():
     status_var.set("正在取消...")
 
 def open_output_dir():
-    path = output_entry.get().strip()
+    path = ''
+    try:
+        path = output_entry.get().strip() if 'output_entry' in globals() else ''
+    except Exception:
+        path = ''
     if not path:
-        messagebox.showerror("错误", "请先选择输出文件路径！")
+        title = "Error" if LANG == "en" else "错误"
+        message = "Please select an output path first." if LANG == "en" else "请先选择输出路径。"
+        messagebox.showerror(title, message)
         return
-    folder = os.path.dirname(path) or os.getcwd()
+    folder = path if os.path.isdir(path) else os.path.dirname(path)
+    if not folder:
+        folder = os.getcwd()
+    if not os.path.exists(folder):
+        try:
+            os.makedirs(folder, exist_ok=True)
+        except Exception as exc:
+            title = "Error" if LANG == "en" else "错误"
+            messagebox.showerror(title, str(exc))
+            return
     open_folder(folder)
 
 def open_folder(folder):
@@ -354,7 +424,7 @@ def open_pdf_previewer(pdf_path):
 def open_merge_manager():
     try:
         notebook.select(merge_tab)
-        status_var.set("???? PDF ???")
+        status_var.set("已切换到 PDF 合并页签")
     except Exception:
         pass
 
@@ -433,47 +503,187 @@ settings_tab = ttk.Frame(notebook)
 
 recent_files = []
 
+
+def _save_settings_if_ready():
+    if 'SETTINGS_PATH' in globals():
+        save_settings()
+
+
+
+def _apply_recent_files(new_recent_files: list[str]):
+    global recent_files
+    recent_files = list(new_recent_files)
+    update_recent_menu()
+
+
+
 def update_recent_menu():
     if 'recent_menu' not in globals():
         return
-    recent_menu.delete(0, 'end')
-    if not recent_files:
-        recent_menu.add_command(label='??????', state='disabled')
-        return
-    for idx, path in enumerate(recent_files):
-        recent_menu.add_command(label=path, command=lambda i=idx: open_recent(i))
+    empty_label = 'No recent files' if LANG == 'en' else '暂无最近文件'
+    update_recent_menu_ui(recent_menu, recent_files, open_recent, empty_label=empty_label)
+
 
 
 def add_recent_file(path: str):
     global recent_files
-    if not path:
-        return
-    recent_files = push_recent_file(recent_files, path)
-    update_recent_menu()
-    if 'SETTINGS_PATH' in globals():
-        save_settings()
+    recent_files = add_recent_file_ui(
+        recent_files,
+        path,
+        _apply_recent_files,
+        _save_settings_if_ready,
+    )
+
 
 
 def open_recent(idx: int):
-    if 0 <= idx < len(recent_files):
-        set_input_file(recent_files[idx])
+    open_recent_ui(recent_files, idx, set_input_file)
+
+
+
+def get_ranges_placeholder() -> str:
+    return "e.g. 1-3,5,7-9" if LANG == "en" else "例如：1-3,5,7-9（支持中文逗号）"
+
+
+def get_recent_button_text() -> str:
+    return "Recent" if LANG == "en" else "最近"
+
+
+def get_open_output_button_text() -> str:
+    return "Open output dir" if LANG == "en" else "打开输出目录"
+
+
+def get_preview_tab_texts() -> PreviewTabTexts:
+    if LANG == "en":
+        return PreviewTabTexts(
+            frame_title="PDF Preview",
+            input_label="PDF file",
+            browse_button="Browse...",
+            open_button="Open preview",
+        )
+    return PreviewTabTexts(
+        frame_title="PDF 预览",
+        input_label="PDF 文件",
+        browse_button="浏览...",
+        open_button="打开预览",
+    )
+
+
+def get_settings_tab_texts() -> SettingsTabTexts:
+    if LANG == "en":
+        return SettingsTabTexts(
+            frame_title="Settings",
+            theme_label="Theme",
+            light_button="Light",
+            dark_button="Dark",
+            language_label="Language",
+            zh_button="ZH",
+            en_button="EN",
+            template_label="Name template",
+            template_hint="{name}=source name, {start}=start page, {end}=end page, {index}=sequence",
+            save_button="Save settings",
+        )
+    return SettingsTabTexts(
+        frame_title="设置",
+        theme_label="主题",
+        light_button="浅色",
+        dark_button="深色",
+        language_label="语言",
+        zh_button="中文",
+        en_button="EN",
+        template_label="命名模板",
+        template_hint="{name}=原文件名, {start}=起始页, {end}=结束页, {index}=序号",
+        save_button="保存设置",
+    )
+
+
+def get_toolbar_texts() -> ToolbarTexts:
+    if LANG == "en":
+        return ToolbarTexts(
+            helper_label="Helpers:",
+            helper_every_button="Every N pages",
+            helper_equal_button="Split K parts",
+            clear_button="Clear ranges",
+            template_label="Name template",
+            recent_button=get_recent_button_text(),
+            open_output_button=get_open_output_button_text(),
+        )
+    return ToolbarTexts(
+        helper_label="范围助手：",
+        helper_every_button="每 N 页拆分",
+        helper_equal_button="均分为 K 份",
+        clear_button="清空范围",
+        template_label="命名模板",
+        recent_button=get_recent_button_text(),
+        open_output_button=get_open_output_button_text(),
+    )
+
+
+def refresh_notebook_titles():
+    if 'notebook' not in globals():
+        return
+    try:
+        if 'split_tab' in globals():
+            notebook.tab(split_tab, text='PDF Split' if LANG == 'en' else 'PDF 拆分')
+        if 'merge_tab' in globals():
+            notebook.tab(merge_tab, text='PDF Merge' if LANG == 'en' else 'PDF 合并')
+        if 'preview_tab' in globals():
+            notebook.tab(preview_tab, text='PDF Preview' if LANG == 'en' else 'PDF 预览')
+        if 'settings_tab' in globals():
+            notebook.tab(settings_tab, text='Settings' if LANG == 'en' else '设置')
+    except Exception:
+        pass
+
+
+def refresh_ranges_placeholder():
+    global RANGES_PLACEHOLDER
+    placeholder = get_ranges_placeholder()
+    previous_placeholder = globals().get('RANGES_PLACEHOLDER', placeholder)
+    if 'ranges_entry' in globals():
+        current_text = ranges_entry.get().strip()
+        if current_text == previous_placeholder or not current_text:
+            ranges_entry.delete(0, tk.END)
+            ranges_entry.insert(0, placeholder)
+    RANGES_PLACEHOLDER = placeholder
+
+
+def refresh_auxiliary_texts():
+    try:
+        if 'preview_widgets' in globals():
+            apply_preview_tab_texts(preview_widgets, get_preview_tab_texts())
+    except Exception:
+        pass
+    try:
+        if 'settings_widgets' in globals():
+            apply_settings_tab_texts(settings_widgets, get_settings_tab_texts())
+    except Exception:
+        pass
+    try:
+        if 'toolbar_widgets' in globals():
+            apply_toolbar_texts(
+                toolbar_widgets,
+                get_toolbar_texts(),
+                recent_text=get_recent_button_text(),
+                open_output_text=get_open_output_button_text(),
+            )
+    except Exception:
+        pass
+    refresh_notebook_titles()
+    refresh_ranges_placeholder()
 
 
 def set_language(lang: str):
     global LANG
-    if lang not in STRINGS:
-        return
-    LANG = lang
-    try:
-        root.title(T("title"))
-    except Exception:
-        pass
-    try:
-        recent_btn.configure(text=T("recent"))
-    except Exception:
-        pass
-    if 'SETTINGS_PATH' in globals():
-        save_settings()
+    LANG = set_language_ui(
+        lang,
+        STRINGS,
+        LANG,
+        root,
+        recent_btn,
+        _save_settings_if_ready,
+    )
+    update_recent_menu()
+    refresh_auxiliary_texts()
 
 
 def toggle_theme_dark():
@@ -487,161 +697,84 @@ def toggle_theme_light():
 
 
 def set_theme(dark: bool):
-    global style
-    palette = COLORS["dark"] if dark else COLORS["light"]
-    try:
-        style.theme_use(DARK_THEME if dark else LIGHT_THEME)
-    except Exception:
-        pass
-    root.configure(bg=palette["bg"])
-    style.configure("TFrame", background=palette["bg"])
-    style.configure("TLabelframe", background=palette["bg"])
-    style.configure("TLabelframe.Label", background=palette["bg"], foreground=palette["fg"])
-    style.configure("TLabel", background=palette["bg"], foreground=palette["fg"])
-    style.configure("TEntry", fieldbackground=palette["subbg"], foreground=palette["fg"])
-    style.configure("TButton", background=palette["subbg"], foreground=palette["fg"])
-    style.configure("TCombobox", fieldbackground=palette["subbg"], foreground=palette["fg"])
-    style.configure("TMenubutton", background=palette["subbg"], foreground=palette["fg"])
-    style.configure("Horizontal.TProgressbar", background=palette["accent"])
-    style.configure("TSeparator", background=palette["border"])
-    if 'status_bar' in globals():
-        status_bar.configure(background=palette["bg"], foreground=palette["fg"])
-
+    apply_theme(
+        ThemeConfig(
+            root=root,
+            style=style,
+            status_bar=status_bar if 'status_bar' in globals() else None,
+            colors=COLORS,
+            light_theme=LIGHT_THEME,
+            dark_theme=DARK_THEME,
+        ),
+        dark,
+    )
 
 def save_settings():
-    try:
-        dark_val = bool(theme_dark_var.get())
-    except Exception:
-        dark_val = False
-    settings = AppSettings(
-        input=input_entry.get().strip() if 'input_entry' in globals() else '',
-        output=output_entry.get().strip() if 'output_entry' in globals() else '',
-        dark=dark_val,
-        lang=LANG,
-        recent=recent_files,
-        template=name_template_var.get() if 'name_template_var' in globals() else '{name}_{start}-{end}.pdf',
-        epub_input=epub_input_entry.get().strip() if 'epub_input_entry' in globals() else '',
-        epub_output=epub_output_entry.get().strip() if 'epub_output_entry' in globals() else '',
-        epub_paper=epub_paper_var.get().strip() if 'epub_paper_var' in globals() else 'a4',
+    save_ui_settings(
+        SETTINGS_PATH,
+        input_entry if 'input_entry' in globals() else None,
+        output_entry if 'output_entry' in globals() else None,
+        theme_dark_var,
+        LANG,
+        recent_files,
+        name_template_var if 'name_template_var' in globals() else None,
+        epub_input_entry if 'epub_input_entry' in globals() else None,
+        epub_output_entry if 'epub_output_entry' in globals() else None,
+        epub_paper_var if 'epub_paper_var' in globals() else None,
     )
-    save_app_settings(SETTINGS_PATH, settings)
-
 
 def load_settings():
+    global LANG, recent_files
     try:
-        settings = load_app_settings(SETTINGS_PATH)
-        if settings.input:
-            set_input_file(settings.input)
-        if settings.output and 'output_entry' in globals():
-            output_entry.delete(0, tk.END)
-            output_entry.insert(0, settings.output)
-        try:
-            theme_dark_var.set(bool(settings.dark))
-        except Exception:
-            pass
-        set_theme(bool(settings.dark))
-        global LANG, recent_files
+        settings = load_ui_settings(
+            SETTINGS_PATH,
+            theme_dark_var,
+            set_theme,
+            set_input_file,
+            output_entry if 'output_entry' in globals() else None,
+            name_template_var if 'name_template_var' in globals() else None,
+            epub_input_entry if 'epub_input_entry' in globals() else None,
+            epub_output_entry if 'epub_output_entry' in globals() else None,
+            epub_paper_var if 'epub_paper_var' in globals() else None,
+        )
         LANG = settings.lang or LANG
         recent_files = settings.recent or []
         update_recent_menu()
-        if settings.template and 'name_template_var' in globals():
-            name_template_var.set(settings.template)
-        if settings.epub_input and 'epub_input_entry' in globals():
-            epub_input_entry.delete(0, tk.END)
-            epub_input_entry.insert(0, settings.epub_input)
-        if settings.epub_output and 'epub_output_entry' in globals():
-            epub_output_entry.delete(0, tk.END)
-            epub_output_entry.insert(0, settings.epub_output)
-        if settings.epub_paper and 'epub_paper_var' in globals():
-            epub_paper_var.set(settings.epub_paper)
-        try:
-            recent_btn.configure(text=T("recent"))
-        except Exception:
-            pass
+        refresh_auxiliary_texts()
     except Exception:
         pass
 
-
 def post_progress(pct: float, text: str):
-    progress_queue.put(("progress", pct, text))
-
+    enqueue_progress(progress_queue, pct, text)
 
 def post_done(msg: str, payload=None):
-    progress_queue.put(("done", msg, payload))
-
+    enqueue_done(progress_queue, msg, payload)
 
 def post_error(err):
-    progress_queue.put(("error", err))
-
+    enqueue_error(progress_queue, err)
 
 def start_running_ui():
     global cancel_requested
     cancel_requested = False
-    if 'progress_var' in globals():
-        progress_var.set(0)
-    if 'progress_bar' in globals():
-        progress_bar.grid()
-    if 'cancel_btn' in globals():
-        cancel_btn.grid()
-    if 'status_var' in globals():
-        status_var.set("????...")
-    for widget in globals().get('controls_to_toggle', []):
-        try:
-            if isinstance(widget, ttk.Combobox):
-                widget.configure(state='disabled')
-            else:
-                widget.configure(state='disabled')
-        except Exception:
-            pass
-
+    start_runtime_ui(controls_to_toggle, progress_var, progress_bar, cancel_btn, status_var)
 
 def stop_running_ui():
-    if 'progress_bar' in globals():
-        progress_bar.grid_remove()
-    if 'cancel_btn' in globals():
-        cancel_btn.grid_remove()
-    for widget in globals().get('controls_to_toggle', []):
-        try:
-            if isinstance(widget, ttk.Combobox):
-                widget.configure(state='readonly')
-            else:
-                widget.configure(state='normal')
-        except Exception:
-            pass
-
+    stop_runtime_ui(controls_to_toggle, progress_bar, cancel_btn)
 
 def poll_queue():
-    try:
-        while True:
-            item = progress_queue.get_nowait()
-            kind = item[0]
-            if kind == 'progress':
-                _, pct, msg = item
-                progress_var.set(int(max(0, min(100, pct))))
-                status_var.set(str(msg))
-            elif kind == 'done':
-                _, msg, payload = item
-                stop_running_ui()
-                progress_var.set(100)
-                status_var.set(str(msg))
-                if msg:
-                    messagebox.showinfo('??', str(msg))
-            elif kind == 'error':
-                _, err = item
-                stop_running_ui()
-                status_var.set('????')
-                messagebox.showerror('??', str(err))
-    except queue.Empty:
-        pass
-    root.after(150, poll_queue)
-
+    poll_progress_queue(root, progress_queue, progress_var, status_var, stop_running_ui)
 
 def helper_every_n_pages():
     input_file = input_entry.get().strip()
+    error_title = 'Error' if LANG == 'en' else '错误'
     if not input_file:
-        messagebox.showerror('??', '?????? PDF ??')
+        messagebox.showerror(error_title, 'Please select a PDF file first.' if LANG == 'en' else '请先选择 PDF 文件！')
         return
-    n = simpledialog.askinteger('?N???', '???????', minvalue=1)
+    n = simpledialog.askinteger(
+        'Split Every N Pages' if LANG == 'en' else '每 N 页拆分',
+        'Enter pages per split:' if LANG == 'en' else '请输入每份包含的页数：',
+        minvalue=1,
+    )
     if not n:
         return
     try:
@@ -652,17 +785,22 @@ def helper_every_n_pages():
             parts.append(f'{start}-{end}')
         ranges_entry.delete(0, tk.END)
         ranges_entry.insert(0, ', '.join(parts))
-        status_var.set(f'??? {n} ?????')
+        status_var.set(f'Generated ranges every {n} pages' if LANG == 'en' else f'已生成每 {n} 页的范围')
     except Exception as exc:
-        messagebox.showerror('??', str(exc))
+        messagebox.showerror(error_title, str(exc))
 
 
 def helper_equal_k_parts():
     input_file = input_entry.get().strip()
+    error_title = 'Error' if LANG == 'en' else '错误'
     if not input_file:
-        messagebox.showerror('??', '?????? PDF ??')
+        messagebox.showerror(error_title, 'Please select a PDF file first.' if LANG == 'en' else '请先选择 PDF 文件！')
         return
-    k = simpledialog.askinteger('???K?', '?????', minvalue=1)
+    k = simpledialog.askinteger(
+        'Split Into K Parts' if LANG == 'en' else '均分为 K 份',
+        'Enter number of parts:' if LANG == 'en' else '请输入份数：',
+        minvalue=1,
+    )
     if not k:
         return
     try:
@@ -679,109 +817,48 @@ def helper_equal_k_parts():
             start = end + 1
         ranges_entry.delete(0, tk.END)
         ranges_entry.insert(0, ', '.join(parts))
-        status_var.set(f'???? {k} ?')
+        status_var.set(f'Generated {k} equal parts' if LANG == 'en' else f'已生成均分为 {k} 份的范围')
     except Exception as exc:
-        messagebox.showerror('??', str(exc))
+        messagebox.showerror(error_title, str(exc))
 
 
 def clear_ranges():
     ranges_entry.delete(0, tk.END)
     ranges_entry.insert(0, RANGES_PLACEHOLDER)
-    status_var.set('?????')
+    status_var.set('Cleared page ranges' if LANG == 'en' else '已清空页码范围')
 
-notebook.add(split_tab, text="PDF ??")
-notebook.add(merge_tab, text="PDF ??")
-notebook.add(preview_tab, text="PDF ??")
-notebook.add(settings_tab, text="??")
+notebook.add(split_tab, text="PDF 拆分")
+notebook.add(merge_tab, text="PDF 合并")
+notebook.add(preview_tab, text="PDF 预览")
+notebook.add(settings_tab, text="设置")
+refresh_notebook_titles()
 
 theme_dark_var = tk.BooleanVar(value=False)
 
 # PDF 拆分选项卡内容
 # 文件区域
-files_frame = ttk.LabelFrame(split_tab, text="文件")
-files_frame.grid(row=0, column=0, columnspan=3, sticky="ew", padx=4, pady=(0,8))
-for c in range(3):
-    files_frame.columnconfigure(c, weight=1 if c == 1 else 0)
+RANGES_PLACEHOLDER = get_ranges_placeholder()
+split_widgets = build_split_tab(split_tab, RANGES_PLACEHOLDER)
+files_frame = split_widgets.files_frame
+input_entry = split_widgets.input_entry
+input_browse_btn = split_widgets.input_browse_btn
+output_entry = split_widgets.output_entry
+output_browse_btn = split_widgets.output_browse_btn
+pages_var = split_widgets.pages_var
+preview_btn = split_widgets.preview_btn
+split_frame = split_widgets.split_frame
+ranges_entry = split_widgets.ranges_entry
+preview_split_btn = split_widgets.preview_split_btn
+split_range_btn = split_widgets.split_range_btn
+split_each_btn = split_widgets.split_each_btn
+chapters_text = split_widgets.chapters_text
+split_chapters_btn = split_widgets.split_chapters_btn
+split_auto_chapters_btn = split_widgets.split_auto_chapters_btn
 
-ttk.Label(files_frame, text="输入 PDF 文件").grid(row=0, column=0, sticky="w", padx=8, pady=6)
-input_entry = ttk.Entry(files_frame)
-input_entry.grid(row=0, column=1, sticky="ew", padx=4)
-ttk.Button(files_frame, text="浏览...", command=select_input_file, width=10).grid(row=0, column=2, padx=8)
+input_browse_btn.configure(command=select_input_file)
+output_browse_btn.configure(command=select_output_file)
+preview_btn.configure(command=lambda: open_pdf_previewer(input_entry.get().strip()))
 
-ttk.Label(files_frame, text="输出 PDF 文件").grid(row=1, column=0, sticky="w", padx=8, pady=6)
-output_entry = ttk.Entry(files_frame)
-output_entry.grid(row=1, column=1, sticky="ew", padx=4)
-ttk.Button(files_frame, text="浏览...", command=select_output_file, width=10).grid(row=1, column=2, padx=8)
-
-# 页数信息
-pages_var = tk.StringVar(value="总页数：-")
-ttk.Label(files_frame, textvariable=pages_var, foreground="#666666").grid(row=2, column=1, sticky="w", padx=4, pady=(0,6))
-
-# 预览按钮
-preview_btn = ttk.Button(files_frame, text="预览 PDF", command=lambda: open_pdf_previewer(input_entry.get().strip()), width=12)
-preview_btn.grid(row=2, column=2, padx=8, pady=4)
-preview_btn.configure(state="disabled")  # 初始禁用，选择文件后启用
-
-# 拆分区域
-split_frame = ttk.LabelFrame(split_tab, text="拆分")
-split_frame.grid(row=1, column=0, columnspan=3, sticky="ew", padx=4, pady=4)
-split_frame.columnconfigure(1, weight=1)
-
-# 配置 split_tab 的列宽
-split_tab.columnconfigure(1, weight=1)
-
-# PDF 合并选项卡内容
-merge_tab_frame = ttk.LabelFrame(merge_tab, text="PDF 合并")
-merge_tab_frame.grid(row=0, column=0, sticky="nsew", padx=4, pady=4)
-merge_tab.columnconfigure(0, weight=1)
-merge_tab.rowconfigure(0, weight=1)
-merge_tab_frame.columnconfigure(0, weight=1)
-merge_tab_frame.rowconfigure(0, weight=1)
-
-# 文件列表
-merge_listbox = tk.Listbox(merge_tab_frame, selectmode=tk.EXTENDED)
-merge_listbox.grid(row=0, column=0, sticky="nsew", padx=4, pady=4)
-
-# 滚动条
-merge_scrollbar = ttk.Scrollbar(merge_tab_frame, orient="vertical", command=merge_listbox.yview)
-merge_scrollbar.grid(row=0, column=1, sticky="ns", pady=4)
-merge_listbox.configure(yscrollcommand=merge_scrollbar.set)
-
-# 按钮区域
-merge_buttons_frame = ttk.Frame(merge_tab_frame)
-merge_buttons_frame.grid(row=1, column=0, columnspan=2, sticky="ew", padx=4, pady=4)
-for i in range(8):
-    merge_buttons_frame.columnconfigure(i, weight=1)
-
-# 添加文件
-merge_add_btn = ttk.Button(merge_buttons_frame, text="添加文件")
-merge_add_btn.grid(row=0, column=0, padx=4)
-
-# 移除选中
-merge_remove_btn = ttk.Button(merge_buttons_frame, text="移除选中")
-merge_remove_btn.grid(row=0, column=1, padx=4)
-
-# 上移
-merge_up_btn = ttk.Button(merge_buttons_frame, text="上移")
-merge_up_btn.grid(row=0, column=2, padx=4)
-
-# 下移
-merge_down_btn = ttk.Button(merge_buttons_frame, text="下移")
-merge_down_btn.grid(row=0, column=3, padx=4)
-
-# 清空
-merge_clear_btn = ttk.Button(merge_buttons_frame, text="清空")
-merge_clear_btn.grid(row=0, column=4, padx=4)
-
-# 分割线
-ttk.Separator(merge_buttons_frame).grid(row=0, column=5, sticky="ew", padx=8)
-
-# 开始合并
-merge_start_btn = ttk.Button(merge_buttons_frame, text="开始合并")
-merge_start_btn.grid(row=0, column=6, padx=4)
-
-# 合并按钮事件处理
-# 添加文件
 def merge_add_files():
     items = filedialog.askopenfilenames(title="选择 PDF", filetypes=[("PDF files", "*.pdf")])
     for it in items:
@@ -847,6 +924,18 @@ def merge_start():
     threading.Thread(target=task, daemon=True).start()
 
 # 绑定按钮事件
+merge_widgets = build_merge_tab(merge_tab)
+merge_tab_frame = merge_widgets.frame
+merge_listbox = merge_widgets.listbox
+merge_scrollbar = merge_widgets.scrollbar
+merge_buttons_frame = merge_widgets.buttons_frame
+merge_add_btn = merge_widgets.add_btn
+merge_remove_btn = merge_widgets.remove_btn
+merge_up_btn = merge_widgets.up_btn
+merge_down_btn = merge_widgets.down_btn
+merge_clear_btn = merge_widgets.clear_btn
+merge_start_btn = merge_widgets.start_btn
+
 merge_add_btn.configure(command=merge_add_files)
 merge_remove_btn.configure(command=merge_remove_selected)
 merge_up_btn.configure(command=merge_move_up)
@@ -874,28 +963,13 @@ merge_listbox.bind("<Button-1>", merge_on_start_drag)
 merge_listbox.bind("<B1-Motion>", merge_on_drag_motion)
 
 # PDF 预览选项卡内容
-preview_frame = ttk.LabelFrame(preview_tab, text="PDF 预览")
-preview_frame.grid(row=0, column=0, sticky="nsew", padx=4, pady=4)
-preview_tab.columnconfigure(0, weight=1)
-preview_tab.rowconfigure(0, weight=1)
-preview_frame.columnconfigure(1, weight=1)
+preview_widgets = build_preview_tab(preview_tab, get_preview_tab_texts())
+preview_frame = preview_widgets.frame
+preview_input_var = preview_widgets.input_var
+preview_input_entry = preview_widgets.input_entry
+preview_browse_btn = preview_widgets.browse_btn
+preview_open_btn = preview_widgets.open_btn
 
-# 预览文件选择
-preview_input_var = tk.StringVar()
-ttk.Label(preview_frame, text="PDF 文件").grid(row=0, column=0, sticky="w", padx=8, pady=6)
-preview_input_entry = ttk.Entry(preview_frame, textvariable=preview_input_var)
-preview_input_entry.grid(row=0, column=1, sticky="ew", padx=4)
-
-# 浏览按钮
-preview_browse_btn = ttk.Button(preview_frame, text="浏览...")
-preview_browse_btn.grid(row=0, column=2, padx=8)
-
-# 预览按钮
-preview_open_btn = ttk.Button(preview_frame, text="打开预览", width=12)
-preview_open_btn.grid(row=1, column=1, sticky="w", padx=4, pady=6)
-
-# 预览选项卡事件处理
-# 浏览文件
 def preview_browse_file():
     filename = filedialog.askopenfilename(filetypes=[("PDF files", "*.pdf")])
     if filename:
@@ -914,37 +988,14 @@ preview_browse_btn.configure(command=preview_browse_file)
 preview_open_btn.configure(command=preview_open)
 
 # EPUB 转换选项卡内容（如果库可用）
-settings_frame = ttk.LabelFrame(settings_tab, text="设置")
-settings_frame.grid(row=0, column=0, sticky="nsew", padx=4, pady=4)
-settings_tab.columnconfigure(0, weight=1)
-settings_tab.rowconfigure(0, weight=1)
-settings_frame.columnconfigure(1, weight=1)
-
-# 主题设置
-ttk.Label(settings_frame, text="主题").grid(row=0, column=0, sticky="w", padx=8, pady=6)
-theme_frame = ttk.Frame(settings_frame)
-theme_frame.grid(row=0, column=1, sticky="w", padx=4)
-ttk.Button(theme_frame, text="浅色", command=toggle_theme_light).pack(side="left", padx=4)
-ttk.Button(theme_frame, text="深色", command=toggle_theme_dark).pack(side="left", padx=4)
-
-# 语言设置
-ttk.Label(settings_frame, text="语言").grid(row=1, column=0, sticky="w", padx=8, pady=6)
-lang_frame = ttk.Frame(settings_frame)
-lang_frame.grid(row=1, column=1, sticky="w", padx=4)
-ttk.Button(lang_frame, text="中文", command=lambda: set_language("zh")).pack(side="left", padx=4)
-ttk.Button(lang_frame, text="English", command=lambda: set_language("en")).pack(side="left", padx=4)
-
-# 命名模板设置
-ttk.Label(settings_frame, text="命名模板").grid(row=2, column=0, sticky="w", padx=8, pady=6)
 name_template_var = tk.StringVar(value="{name}_{start}-{end}.pdf")
-template_entry = ttk.Entry(settings_frame, textvariable=name_template_var)
-template_entry.grid(row=2, column=1, sticky="ew", padx=4)
-template_help = ttk.Label(settings_frame, text="{name}=文件名, {start}=开始页, {end}=结束页, {index}=序号", foreground="#666666")
-template_help.grid(row=3, column=1, sticky="w", padx=4, pady=(0,6))
-
-# 保存设置按钮
-save_settings_btn = ttk.Button(settings_frame, text="保存设置")
-save_settings_btn.grid(row=4, column=1, sticky="w", padx=4, pady=6)
+settings_widgets = build_settings_tab(settings_tab, name_template_var, get_settings_tab_texts())
+settings_frame = settings_widgets.frame
+save_settings_btn = settings_widgets.save_btn
+settings_widgets.light_btn.configure(command=toggle_theme_light)
+settings_widgets.dark_btn.configure(command=toggle_theme_dark)
+settings_widgets.zh_btn.configure(command=lambda: set_language("zh"))
+settings_widgets.en_btn.configure(command=lambda: set_language("en"))
 
 def save_settings_from_tab():
     save_settings()
@@ -952,45 +1003,22 @@ def save_settings_from_tab():
 
 save_settings_btn.configure(command=save_settings_from_tab)
 
-ttk.Label(split_frame, text="页码范围").grid(row=0, column=0, sticky="w", padx=8, pady=6)
-RANGES_PLACEHOLDER = "例如：1-3,5,7-9（支持中文逗号）"
-ranges_entry = ttk.Entry(split_frame)
-ranges_entry.grid(row=0, column=1, sticky="ew", padx=4)
-
 def _on_ranges_focus_in(event):
     if ranges_entry.get().strip() == RANGES_PLACEHOLDER:
         ranges_entry.delete(0, tk.END)
+
 
 def _on_ranges_focus_out(event):
     if not ranges_entry.get().strip():
         ranges_entry.insert(0, RANGES_PLACEHOLDER)
 
-ranges_entry.insert(0, RANGES_PLACEHOLDER)
+
 ranges_entry.bind("<FocusIn>", _on_ranges_focus_in)
 ranges_entry.bind("<FocusOut>", _on_ranges_focus_out)
+preview_split_btn.configure(command=run_preview)
+split_range_btn.configure(command=run_split)
+split_each_btn.configure(command=run_split_each)
 
-# 预览拆分结果按钮
-preview_split_btn = ttk.Button(split_frame, text="预览拆分结果", command=run_preview, width=16)
-preview_split_btn.grid(row=0, column=2, padx=8, pady=4)
-
-ttk.Separator(split_frame).grid(row=1, column=0, columnspan=3, sticky="ew", padx=8, pady=4)
-
-# 按范围拆分按钮
-split_range_btn = ttk.Button(split_frame, text="按范围拆分", command=run_split, width=18)
-split_range_btn.grid(row=2, column=1, sticky="w", padx=4, pady=6)
-
-# 拆成单页按钮
-split_each_btn = ttk.Button(split_frame, text="拆成单页", command=run_split_each, width=18)
-split_each_btn.grid(row=2, column=1, sticky="e", padx=4, pady=6)
-
-# 章节拆分区域
-ttk.Separator(split_frame).grid(row=3, column=0, columnspan=3, sticky="ew", padx=8, pady=4)
-ttk.Label(split_frame, text="章节范围（每行为一章：起始页-结束页）").grid(row=4, column=0, sticky="w", padx=8, pady=6)
-chapters_text = tk.Text(split_frame, height=8, width=50)
-chapters_text.grid(row=4, column=1, sticky="ew", padx=4)
-chapters_text.insert("1.0", "例如：\n1-10\n11-25\n26-40\n41-55\n56-70")
-
-# 按章节拆分按钮
 def run_split_by_chapters():
     input_file = input_entry.get().strip()
     output_file = output_entry.get().strip()
@@ -1025,8 +1053,7 @@ def run_split_by_chapters():
     start_running_ui()
     threading.Thread(target=task, daemon=True).start()
 
-split_chapters_btn = ttk.Button(split_frame, text="按章节拆分", command=run_split_by_chapters, width=18)
-split_chapters_btn.grid(row=5, column=1, sticky="w", padx=4, pady=6)
+split_chapters_btn.configure(command=run_split_by_chapters)
 
 # 自动按章节拆分按钮
 def run_split_by_auto_chapters():
@@ -1048,31 +1075,7 @@ def run_split_by_auto_chapters():
     start_running_ui()
     threading.Thread(target=task, daemon=True).start()
 
-split_auto_chapters_btn = ttk.Button(split_frame, text="自动按章节拆分", command=run_split_by_auto_chapters, width=18)
-split_auto_chapters_btn.grid(row=5, column=1, sticky="e", padx=4, pady=6)
-
-# 合并区域
-merge_frame = ttk.LabelFrame(container, text="合并")
-merge_frame.grid(row=2, column=0, columnspan=3, sticky="ew", padx=4, pady=4)
-merge_frame.columnconfigure(1, weight=1)
-
-# 合并 PDF 按钮
-merge_btn = ttk.Button(merge_frame, text="合并 PDF", command=run_merge, width=18)
-merge_btn.grid(row=0, column=0, padx=8, pady=6)
-
-# 打开输出目录按钮
-open_output_btn = ttk.Button(merge_frame, text="打开输出目录", command=open_output_dir, width=18)
-open_output_btn.grid(row=0, column=1, padx=8, pady=6, sticky="w")
-
-# EPUB 转 PDF 区域
-epub_frame = ttk.LabelFrame(container, text="EPUB 转 PDF")
-epub_frame.grid(row=3, column=0, columnspan=3, sticky="ew", padx=4, pady=4)
-for c in range(3):
-    epub_frame.columnconfigure(c, weight=1 if c == 1 else 0)
-
-ttk.Label(epub_frame, text="输入 EPUB 文件").grid(row=0, column=0, sticky="w", padx=8, pady=6)
-epub_input_entry = ttk.Entry(epub_frame)
-epub_input_entry.grid(row=0, column=1, sticky="ew", padx=4)
+split_auto_chapters_btn.configure(command=run_split_by_auto_chapters)
 
 def select_epub_input():
     fname = filedialog.askopenfilename(filetypes=[("EPUB files", "*.epub")])
@@ -1080,7 +1083,6 @@ def select_epub_input():
         return
     epub_input_entry.delete(0, tk.END)
     epub_input_entry.insert(0, fname)
-    # 若输出为空，自动建议输出名
     try:
         base_dir = os.path.dirname(fname)
         base_name = os.path.splitext(os.path.basename(fname))[0]
@@ -1091,12 +1093,6 @@ def select_epub_input():
         pass
     save_settings()
 
-epub_browse_btn = ttk.Button(epub_frame, text="浏览...", command=select_epub_input, width=10)
-epub_browse_btn.grid(row=0, column=2, padx=8)
-
-ttk.Label(epub_frame, text="输出 PDF 文件").grid(row=1, column=0, sticky="w", padx=8, pady=6)
-epub_output_entry = ttk.Entry(epub_frame)
-epub_output_entry.grid(row=1, column=1, sticky="ew", padx=4)
 
 def select_epub_output():
     fname = filedialog.asksaveasfilename(defaultextension=".pdf", filetypes=[("PDF files", "*.pdf")])
@@ -1106,54 +1102,15 @@ def select_epub_output():
     epub_output_entry.insert(0, fname)
     save_settings()
 
-epub_output_browse_btn = ttk.Button(epub_frame, text="浏览...", command=select_epub_output, width=10)
-epub_output_browse_btn.grid(row=1, column=2, padx=8)
-
-ttk.Label(epub_frame, text="纸张").grid(row=2, column=0, sticky="w", padx=8, pady=6)
-epub_paper_var = tk.StringVar(value="a4")
-epub_paper_combo = ttk.Combobox(epub_frame, textvariable=epub_paper_var, state="readonly", width=12,
-                            values=("a4", "a5", "letter", "legal"))
-epub_paper_combo.grid(row=2, column=1, sticky="w", padx=4)
-
-# 响应式布局调整
-def _legacy_on_window_resize(event):
-    """窗口大小变化时的响应式布局调整"""
-    window_width = event.width
-    
-    # 根据窗口宽度调整组件布局
-    if window_width < 900:
-        # 窄窗口布局
-        try:
-            files_frame.grid(row=0, column=0, columnspan=3, sticky="ew", padx=4, pady=(0,8))
-            split_frame.grid(row=1, column=0, columnspan=3, sticky="ew", padx=4, pady=4)
-            merge_frame.grid(row=2, column=0, columnspan=3, sticky="ew", padx=4, pady=4)
-            epub_frame.grid(row=3, column=0, columnspan=3, sticky="ew", padx=4, pady=4)
-            batch_epub_frame.grid(row=4, column=0, columnspan=3, sticky="ew", padx=4, pady=4)
-            
-            # 确保所有列都有适当的权重
-            for frame in [files_frame, split_frame, merge_frame, epub_frame, batch_epub_frame]:
-                try:
-                    frame.columnconfigure(1, weight=1)
-                except Exception:
-                    pass
-        except Exception:
-            pass
-    else:
-        # 宽窗口布局
-        try:
-            files_frame.grid(row=0, column=0, columnspan=3, sticky="ew", padx=4, pady=(0,8))
-            split_frame.grid(row=1, column=0, columnspan=3, sticky="ew", padx=4, pady=4)
-            merge_frame.grid(row=2, column=0, columnspan=3, sticky="ew", padx=4, pady=4)
-            epub_frame.grid(row=3, column=0, columnspan=3, sticky="ew", padx=4, pady=4)
-            batch_epub_frame.grid(row=4, column=0, columnspan=3, sticky="ew", padx=4, pady=4)
-        except Exception:
-            pass
 
 def run_epub_convert():
     epub_in = epub_input_entry.get().strip()
     pdf_out = epub_output_entry.get().strip()
     if not epub_in or not pdf_out:
-        messagebox.showerror("错误", "请先选择 EPUB 输入与 PDF 输出文件！")
+        messagebox.showerror(
+            "Error" if LANG == "en" else "错误",
+            "Please select EPUB input and PDF output paths first." if LANG == "en" else "请先选择 EPUB 输入文件和 PDF 输出路径！",
+        )
         return
     paper = epub_paper_var.get().strip() or "a4"
 
@@ -1161,110 +1118,105 @@ def run_epub_convert():
         try:
             ctx = build_tk_task_context()
             do_epub_convert_with_progress(ctx, epub_in, pdf_out, paper)
-        except Exception as e:
-            post_error(e)
+        except Exception as exc:
+            post_error(exc)
 
     start_running_ui()
     threading.Thread(target=task, daemon=True).start()
 
-# 开始转换按钮
-epub_convert_btn = ttk.Button(epub_frame, text="开始转换", command=run_epub_convert, width=18)
-epub_convert_btn.grid(row=2, column=2, padx=8)
-
-# 批量 EPUB 转 PDF 区域
-batch_epub_frame = ttk.LabelFrame(container, text="批量 EPUB 转 PDF")
-batch_epub_frame.grid(row=4, column=0, columnspan=3, sticky="ew", padx=4, pady=4)
-for c in range(3):
-    batch_epub_frame.columnconfigure(c, weight=1 if c == 1 else 0)
-
-# 批量文件列表
-batch_epub_list = tk.Listbox(batch_epub_frame, selectmode=tk.EXTENDED, height=6)
-batch_epub_list.grid(row=0, column=0, columnspan=3, sticky="nsew", padx=8, pady=6)
-
-# 批量操作按钮
-batch_buttons_frame = ttk.Frame(batch_epub_frame)
-batch_buttons_frame.grid(row=1, column=0, columnspan=3, sticky="ew", padx=8, pady=4)
-batch_buttons_frame.columnconfigure(4, weight=1)
 
 def add_batch_epub_files():
-    """添加多个 EPUB 文件到批量转换列表"""
-    files = filedialog.askopenfilenames(title="选择 EPUB 文件", filetypes=[("EPUB files", "*.epub")])
-    if files:
-        for file in files:
-            batch_epub_list.insert("end", file)
+    files = filedialog.askopenfilenames(
+        title="Select EPUB files" if LANG == "en" else "选择 EPUB 文件",
+        filetypes=[("EPUB files", "*.epub")],
+    )
+    if not files:
+        return
+    for file_path in files:
+        batch_epub_list.insert("end", file_path)
+
 
 def remove_batch_selected():
-    """移除选中的 EPUB 文件"""
     selected = list(batch_epub_list.curselection())
     selected.reverse()
-    for i in selected:
-        batch_epub_list.delete(i)
+    for index in selected:
+        batch_epub_list.delete(index)
+
 
 def clear_batch_list():
-    """清空批量转换列表"""
     batch_epub_list.delete(0, "end")
 
-ttk.Button(batch_buttons_frame, text="添加文件", command=add_batch_epub_files, width=12).grid(row=0, column=0, padx=4)
-ttk.Button(batch_buttons_frame, text="移除选中", command=remove_batch_selected, width=12).grid(row=0, column=1, padx=4)
-ttk.Button(batch_buttons_frame, text="清空列表", command=clear_batch_list, width=12).grid(row=0, column=2, padx=4)
-
-# 批量转换参数设置
-ttk.Label(batch_epub_frame, text="统一纸张设置").grid(row=2, column=0, sticky="w", padx=8, pady=6)
-batch_epub_paper_var = tk.StringVar(value="a4")
-batch_epub_paper_combo = ttk.Combobox(batch_epub_frame, textvariable=batch_epub_paper_var, state="readonly", width=12,
-                                    values=("a4", "a5", "letter", "legal"))
-batch_epub_paper_combo.grid(row=2, column=1, sticky="w", padx=4)
-
-# 批量输出路径设置
-ttk.Label(batch_epub_frame, text="输出目录").grid(row=3, column=0, sticky="w", padx=8, pady=6)
-batch_output_dir_entry = ttk.Entry(batch_epub_frame)
-batch_output_dir_entry.grid(row=3, column=1, sticky="ew", padx=4)
 
 def select_batch_output_dir():
-    """选择批量转换的输出目录"""
-    directory = filedialog.askdirectory(title="选择输出目录")
-    if directory:
-        batch_output_dir_entry.delete(0, tk.END)
-        batch_output_dir_entry.insert(0, directory)
+    directory = filedialog.askdirectory(title="Select output directory" if LANG == "en" else "选择输出目录")
+    if not directory:
+        return
+    batch_output_dir_entry.delete(0, tk.END)
+    batch_output_dir_entry.insert(0, directory)
 
-ttk.Button(batch_epub_frame, text="浏览...", command=select_batch_output_dir, width=10).grid(row=3, column=2, padx=8)
 
-# 文件名规则设置
-ttk.Label(batch_epub_frame, text="文件名规则").grid(row=4, column=0, sticky="w", padx=8, pady=6)
-batch_filename_var = tk.StringVar(value="{name}.pdf")
-batch_filename_entry = ttk.Entry(batch_epub_frame, textvariable=batch_filename_var, width=40)
-batch_filename_entry.grid(row=4, column=1, sticky="w", padx=4)
-
-# 开始批量转换按钮
 def run_batch_epub_convert():
-    """执行批量 EPUB 转换"""
     epub_files = list(batch_epub_list.get(0, "end"))
     output_dir = batch_output_dir_entry.get().strip()
     paper = batch_epub_paper_var.get().strip() or "a4"
     filename_template = batch_filename_var.get().strip() or "{name}.pdf"
-    
+
     if not epub_files:
-        messagebox.showerror("错误", "请先添加 EPUB 文件到批量转换列表！")
+        messagebox.showerror(
+            "Error" if LANG == "en" else "错误",
+            "Please add EPUB files to convert." if LANG == "en" else "请先添加要转换的 EPUB 文件！",
+        )
         return
-    
     if not output_dir:
-        messagebox.showerror("错误", "请选择输出目录！")
+        messagebox.showerror(
+            "Error" if LANG == "en" else "错误",
+            "Please select an output directory first." if LANG == "en" else "请先选择输出目录！",
+        )
         return
-    
+
     def task():
         try:
             ctx = build_tk_task_context()
             batch_epub_to_pdf(ctx, epub_files, output_dir, paper, filename_template)
-        except Exception as e:
-            post_error(e)
-    
+        except Exception as exc:
+            post_error(exc)
+
     start_running_ui()
     threading.Thread(target=task, daemon=True).start()
 
-batch_convert_btn = ttk.Button(batch_epub_frame, text="开始批量转换", command=run_batch_epub_convert, width=18)
-batch_convert_btn.grid(row=5, column=2, padx=8, pady=6)
 
-# 状态栏
+epub_widgets = build_epub_panels(container)
+epub_frame = epub_widgets.epub_frame
+epub_input_entry = epub_widgets.input_entry
+epub_browse_btn = epub_widgets.browse_btn
+epub_output_entry = epub_widgets.output_entry
+epub_output_browse_btn = epub_widgets.output_browse_btn
+epub_paper_var = epub_widgets.paper_var
+epub_paper_combo = epub_widgets.paper_combo
+epub_convert_btn = epub_widgets.convert_btn
+batch_epub_frame = epub_widgets.batch_frame
+batch_epub_list = epub_widgets.batch_list
+batch_buttons_frame = epub_widgets.batch_buttons_frame
+batch_add_btn = epub_widgets.batch_add_btn
+batch_remove_btn = epub_widgets.batch_remove_btn
+batch_clear_btn = epub_widgets.batch_clear_btn
+batch_epub_paper_var = epub_widgets.batch_paper_var
+batch_epub_paper_combo = epub_widgets.batch_paper_combo
+batch_output_dir_entry = epub_widgets.batch_output_dir_entry
+batch_output_browse_btn = epub_widgets.batch_output_browse_btn
+batch_filename_var = epub_widgets.batch_filename_var
+batch_filename_entry = epub_widgets.batch_filename_entry
+batch_convert_btn = epub_widgets.batch_convert_btn
+
+epub_browse_btn.configure(command=select_epub_input)
+epub_output_browse_btn.configure(command=select_epub_output)
+epub_convert_btn.configure(command=run_epub_convert)
+batch_add_btn.configure(command=add_batch_epub_files)
+batch_remove_btn.configure(command=remove_batch_selected)
+batch_clear_btn.configure(command=clear_batch_list)
+batch_output_browse_btn.configure(command=select_batch_output_dir)
+batch_convert_btn.configure(command=run_batch_epub_convert)
+
 status_var = tk.StringVar(value="就绪")
 status_bar = ttk.Label(root, textvariable=status_var, anchor="w", padding=(10,6), font=("Arial", 9), background="#f0f0f0")
 status_bar.grid(row=3, column=0, sticky="ew")
@@ -1285,51 +1237,30 @@ cancel_btn.grid(row=2, column=0, sticky="e", padx=12)
 cancel_btn.grid_remove()
 
 # 底部工具栏（主题切换、范围助手）
-toolbar = ttk.Frame(root, padding=(12,6))
-toolbar.grid(row=4, column=0, sticky="ew")
-toolbar.columnconfigure(10, weight=1)
+toolbar_widgets = build_toolbar(
+    root,
+    name_template_var,
+    get_recent_button_text(),
+    get_open_output_button_text(),
+    get_toolbar_texts(),
+)
+toolbar = toolbar_widgets.frame
+recent_btn = toolbar_widgets.recent_btn
+recent_menu = toolbar_widgets.recent_menu
+toolbar_widgets.helper_every_btn.configure(command=helper_every_n_pages)
+toolbar_widgets.helper_equal_btn.configure(command=helper_equal_k_parts)
+toolbar_widgets.clear_btn.configure(command=clear_ranges)
+toolbar_widgets.open_output_btn.configure(command=open_output_dir)
+refresh_auxiliary_texts()
 
-ttk.Label(toolbar, text="范围助手:").grid(row=0, column=0, padx=(0,6))
-ttk.Button(toolbar, text="每N页拆分", command=helper_every_n_pages).grid(row=0, column=1, padx=4)
-ttk.Button(toolbar, text="均分为K份", command=helper_equal_k_parts).grid(row=0, column=2, padx=4)
-ttk.Button(toolbar, text="清空范围", command=clear_ranges).grid(row=0, column=3, padx=4)
-
-# 模板输入
-ttk.Label(toolbar, text="命名模板").grid(row=0, column=4, padx=(12,4))
-name_template_entry = ttk.Entry(toolbar, textvariable=name_template_var, width=26)
-name_template_entry.grid(row=0, column=5, padx=2)
-
-# 语言切换与最近
-# language_var = tk.StringVar(value=LANG)
-# ttk.Label(toolbar, text=T("language")).grid(row=0, column=8, padx=(12,2))
-# ttk.Button(toolbar, text=T("zh"), command=lambda: set_language("zh"), width=4).grid(row=0, column=9, padx=2)
-# ttk.Button(toolbar, text=T("en"), command=lambda: set_language("en"), width=4).grid(row=0, column=10, padx=2)
-
-recent_btn = ttk.Menubutton(toolbar, text=T("recent"))
-recent_menu = tk.Menu(recent_btn, tearoff=0)
-recent_btn["menu"] = recent_menu
-recent_btn.grid(row=0, column=11, padx=(12,2))
-
-# 控件集合（执行期间禁用）
 controls_to_toggle = []
-for w in [input_entry, output_entry, ranges_entry, chapters_text]:
-    controls_to_toggle.append(w)
-for parent in [files_frame, split_frame, merge_frame, toolbar]:
-    for child in parent.winfo_children():
-        if isinstance(child, ttk.Button) or isinstance(child, ttk.Entry) or isinstance(child, tk.Text):
-            controls_to_toggle.append(child)
+controls_to_toggle.extend(split_widgets.controls)
+controls_to_toggle.extend(merge_widgets.controls)
+controls_to_toggle.extend(preview_widgets.controls)
+controls_to_toggle.extend(settings_widgets.controls)
+controls_to_toggle.extend(toolbar_widgets.controls)
+controls_to_toggle.extend(epub_widgets.controls)
 
-# 将 EPUB 区域控件也加入可禁用列表
-for child in epub_frame.winfo_children():
-    if isinstance(child, ttk.Button) or isinstance(child, ttk.Entry) or isinstance(child, ttk.Combobox):
-        controls_to_toggle.append(child)
-
-# 将批量 EPUB 区域控件也加入可禁用列表
-for child in batch_epub_frame.winfo_children():
-    if isinstance(child, ttk.Button) or isinstance(child, ttk.Entry) or isinstance(child, ttk.Combobox) or isinstance(child, tk.Listbox):
-        controls_to_toggle.append(child)
-
-# 进度队列与取消标志
 progress_queue: "queue.Queue" = queue.Queue()
 cancel_requested = False
 

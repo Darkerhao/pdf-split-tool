@@ -1,162 +1,103 @@
-#!/usr/bin/env python3
-"""
-测试 EPUB 转 PDF 功能的编码处理
-"""
-
 import os
 import tempfile
-import zipfile
-import json
+import unittest
+from unittest import mock
 
-def create_test_epub(output_path):
-    """创建一个简单的测试 EPUB 文件"""
-    # EPUB 是一个 ZIP 文件，包含特定的结构
-    with zipfile.ZipFile(output_path, 'w') as zf:
-        # 添加 mimetype 文件
-        zf.writestr('mimetype', 'application/epub+zip')
-        
-        # 添加 META-INF/container.xml
-        container_xml = '''<?xml version="1.0"?>
-<container version="1.0" xmlns="urn:oasis:names:tc:opendocument:xmlns:container">
-    <rootfiles>
-        <rootfile full-path="content.opf" media-type="application/oebps-package+xml"/>
-    </rootfiles>
-</container>'''
-        zf.writestr('META-INF/container.xml', container_xml)
-        
-        # 添加 content.opf
-        content_opf = '''<?xml version="1.0" encoding="UTF-8"?>
-<package version="3.0" xmlns="http://www.idpf.org/2007/opf" unique-identifier="bookid">
-    <metadata xmlns:dc="http://purl.org/dc/elements/1.1/">
-        <dc:title>测试 EPUB</dc:title>
-        <dc:creator>测试作者</dc:creator>
-        <dc:identifier id="bookid">urn:uuid:test-epub-12345</dc:identifier>
-        <dc:language>zh-CN</dc:language>
-    </metadata>
-    <manifest>
-        <item id="content" href="content.xhtml" media-type="application/xhtml+xml"/>
-        <item id="ncx" href="toc.ncx" media-type="application/x-dtbncx+xml"/>
-    </manifest>
-    <spine toc="ncx">
-        <itemref idref="content"/>
-    </spine>
-</package>'''
-        zf.writestr('content.opf', content_opf)
-        
-        # 添加 toc.ncx
-        toc_ncx = '''<?xml version="1.0" encoding="UTF-8"?>
-<ncx version="2005-1" xmlns="http://www.daisy.org/z3986/2005/ncx/">
-    <head>
-        <meta name="dtb:uid" content="urn:uuid:test-epub-12345"/>
-        <meta name="dtb:depth" content="1"/>
-        <meta name="dtb:totalPageCount" content="0"/>
-        <meta name="dtb:maxPageNumber" content="0"/>
-    </head>
-    <docTitle>
-        <text>测试 EPUB</text>
-    </docTitle>
-    <navMap>
-        <navPoint id="navpoint-1" playOrder="1">
-            <navLabel>
-                <text>第一章</text>
-            </navLabel>
-            <content src="content.xhtml"/>
-        </navPoint>
-    </navMap>
-</ncx>'''
-        zf.writestr('toc.ncx', toc_ncx)
-        
-        # 添加 content.xhtml（包含中文字符）
-        content_xhtml = '''<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE html>
-<html xmlns="http://www.w3.org/1999/xhtml">
-<head>
-    <title>测试内容</title>
-    <meta charset="UTF-8"/>
-</head>
-<body>
-    <h1>测试 EPUB 文档</h1>
-    <p>这是一个测试 EPUB 文档，用于测试 EPUB 转 PDF 功能的编码处理。</p>
-    <p>包含中文字符和特殊字符：你好，世界！</p>
-    <p>测试段落 1：Lorem ipsum dolor sit amet, consectetur adipiscing elit.</p>
-    <p>测试段落 2： Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.</p>
-</body>
-</html>'''
-        zf.writestr('content.xhtml', content_xhtml)
+from services import epub_service
+from task_context import TaskContext
 
-def test_epub_conversion():
-    """测试 EPUB 转 PDF 功能"""
-    print("创建测试 EPUB 文件...")
-    with tempfile.NamedTemporaryFile(suffix='.epub', delete=False) as tmp_epub:
-        epub_path = tmp_epub.name
-    
-    create_test_epub(epub_path)
-    print(f"测试 EPUB 文件已创建：{epub_path}")
-    
-    # 创建输出 PDF 路径
-    pdf_path = epub_path.replace('.epub', '.pdf')
-    print(f"输出 PDF 文件路径：{pdf_path}")
-    
-    # 导入必要的函数进行测试
-    try:
-        from split_pdf_gui import do_epub_convert_with_progress
-    except ImportError:
-        print("错误：无法导入 split_pdf_gui 模块")
-        return False
-    
-    # 模拟进度和错误处理函数
-    def mock_post_progress(pct, text):
-        print(f"进度: {pct}% - {text}")
-    
-    def mock_post_done(msg, paths):
-        print(f"完成: {msg}")
-        if paths:
-            print(f"生成的文件: {paths}")
-    
-    def mock_post_error(msg):
-        print(f"错误: {msg}")
-    
-    # 替换原始函数
-    import split_pdf_gui
-    original_post_progress = split_pdf_gui.post_progress
-    original_post_done = split_pdf_gui.post_done
-    original_post_error = split_pdf_gui.post_error
-    
-    split_pdf_gui.post_progress = mock_post_progress
-    split_pdf_gui.post_done = mock_post_done
-    split_pdf_gui.post_error = mock_post_error
-    
-    # 运行转换
-    print("\n开始测试 EPUB 转 PDF 转换...")
-    try:
-        # 设置全局变量
-        split_pdf_gui.cancel_requested = False
-        do_epub_convert_with_progress(epub_path, pdf_path, "a4")
-        print("\n测试完成！")
-        success = True
-    except Exception as e:
-        print(f"\n转换过程中出现错误: {e}")
-        success = False
-    finally:
-        # 恢复原始函数
-        split_pdf_gui.post_progress = original_post_progress
-        split_pdf_gui.post_done = original_post_done
-        split_pdf_gui.post_error = original_post_error
-    
-    # 清理临时文件
-    try:
-        if os.path.exists(epub_path):
-            os.unlink(epub_path)
-        if os.path.exists(pdf_path):
-            os.unlink(pdf_path)
-    except Exception:
-        pass
-    
-    return success
+
+class RecordingTaskContext:
+    def __init__(self):
+        self.progress_events: list[tuple[float, str]] = []
+        self.done_events: list[tuple[str, object]] = []
+        self.error_events: list[str] = []
+        self.cancel_requested = False
+        self.task_context = TaskContext(
+            is_cancelled=lambda: self.cancel_requested,
+            report_progress=self.record_progress,
+            report_done=self.record_done,
+            report_error=self.record_error,
+        )
+
+    def record_progress(self, pct: float, text: str) -> None:
+        self.progress_events.append((pct, text))
+
+    def record_done(self, message: str, payload) -> None:
+        self.done_events.append((message, payload))
+
+    def record_error(self, message: str) -> None:
+        self.error_events.append(message)
+
+
+class EpubServiceSmokeTests(unittest.TestCase):
+    def create_temp_path(self, suffix: str) -> str:
+        handle = tempfile.NamedTemporaryFile(suffix=suffix, delete=False)
+        handle.close()
+        self.addCleanup(self.remove_file, handle.name)
+        return handle.name
+
+    @staticmethod
+    def remove_file(file_path: str) -> None:
+        if os.path.exists(file_path):
+            os.unlink(file_path)
+
+    def test_epub_libs_available_flag_is_boolean(self):
+        self.assertIsInstance(epub_service.EPUB_LIBS_AVAILABLE, bool)
+
+    def test_do_epub_convert_with_progress_uses_task_context_contract(self):
+        recorder = RecordingTaskContext()
+        epub_path = self.create_temp_path(".epub")
+        pdf_path = self.create_temp_path(".pdf")
+
+        def fake_python_backend(ctx, actual_epub_path, actual_pdf_path, paper_size):
+            self.assertIs(ctx, recorder.task_context)
+            self.assertEqual(actual_epub_path, epub_path)
+            self.assertEqual(actual_pdf_path, pdf_path)
+            self.assertEqual(paper_size, "a4")
+            ctx.report_progress(55, "python backend ok")
+            ctx.report_done("python backend done", [actual_pdf_path])
+
+        with mock.patch(
+            "services.epub_service.epub_to_pdf_python",
+            side_effect=fake_python_backend,
+        ):
+            result = epub_service.do_epub_convert_with_progress(
+                recorder.task_context,
+                epub_path,
+                pdf_path,
+                "a4",
+            )
+
+        self.assertEqual(result, "success")
+        self.assertFalse(recorder.error_events)
+        self.assertGreaterEqual(len(recorder.progress_events), 2)
+        self.assertEqual(recorder.progress_events[0][0], 10)
+        self.assertEqual(recorder.progress_events[-1], (55, "python backend ok"))
+        self.assertTrue(recorder.done_events)
+        self.assertEqual(recorder.done_events[-1][1], [pdf_path])
+
+    def test_do_epub_convert_with_progress_reports_error_without_backends(self):
+        recorder = RecordingTaskContext()
+
+        with mock.patch(
+            "services.epub_service.epub_to_pdf_python",
+            side_effect=RuntimeError("python backend failed"),
+        ), mock.patch(
+            "services.epub_service.find_ebook_convert",
+            return_value="",
+        ):
+            epub_service.do_epub_convert_with_progress(
+                recorder.task_context,
+                "sample.epub",
+                "sample.pdf",
+                "a4",
+            )
+
+        self.assertFalse(recorder.done_events)
+        self.assertEqual(len(recorder.error_events), 1)
+        self.assertIn("python backend failed", recorder.error_events[0])
+
 
 if __name__ == "__main__":
-    success = test_epub_conversion()
-    if success:
-        print("\n🎉 测试成功！EPUB 转 PDF 功能的编码问题已修复。")
-    else:
-        print("\n❌ 测试失败！EPUB 转 PDF 功能仍存在问题。")
+    unittest.main()

@@ -74,12 +74,11 @@ def set_input_file_ui(
         pages_var.set(f"{pages_prefix}{total}")
         status_var.set(loaded_message)
         preview_btn.configure(state="normal")
+        add_recent_callback(filename)
     except Exception:
         pages_var.set(f"{pages_prefix}-")
         status_var.set(load_failed_message)
         preview_btn.configure(state="disabled")
-
-    add_recent_callback(filename)
 
 
 def update_recent_menu_ui(
@@ -134,7 +133,6 @@ def set_language_ui(lang: str, strings: dict, current_lang: str, root, recent_bt
     except Exception:
         pass
 
-    save_settings_callback()
     return new_lang
 
 

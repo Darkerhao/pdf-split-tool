@@ -36,6 +36,46 @@ class ToolbarTexts:
     open_output_button: str = "打开输出目录"
 
 
+@dataclass(frozen=True)
+class EPUBPanelTexts:
+    frame_title: str = "EPUB 转 PDF"
+    input_label: str = "输入 EPUB 文件"
+    output_label: str = "输出 PDF 文件"
+    paper_label: str = "纸张大小"
+    convert_button: str = "开始转换"
+    batch_frame_title: str = "批量 EPUB 转 PDF"
+    batch_hint: str = ""
+    batch_add: str = "添加 EPUB"
+    batch_remove: str = "移除选中"
+    batch_clear: str = "清空列表"
+    batch_paper_label: str = "批量纸张大小"
+    batch_output_label: str = "批量输出目录"
+    batch_template_label: str = "输出文件名模板"
+    batch_convert: str = "开始批量转换"
+
+
+def apply_epub_panel_texts(
+    widgets,
+    texts: EPUBPanelTexts | None = None,
+) -> None:
+    resolved = texts or EPUBPanelTexts()
+    widgets.epub_frame.configure(text=resolved.frame_title)
+    widgets.input_label.configure(text=resolved.input_label)
+    widgets.output_label.configure(text=resolved.output_label)
+    widgets.paper_label.configure(text=resolved.paper_label)
+    widgets.convert_btn.configure(text=resolved.convert_button)
+    widgets.batch_frame.configure(text=resolved.batch_frame_title)
+    if resolved.batch_hint:
+        widgets.batch_hint_label.configure(text=resolved.batch_hint)
+    widgets.batch_add_btn.configure(text=resolved.batch_add)
+    widgets.batch_remove_btn.configure(text=resolved.batch_remove)
+    widgets.batch_clear_btn.configure(text=resolved.batch_clear)
+    widgets.batch_paper_label.configure(text=resolved.batch_paper_label)
+    widgets.batch_output_label.configure(text=resolved.batch_output_label)
+    widgets.batch_template_label.configure(text=resolved.batch_template_label)
+    widgets.batch_convert_btn.configure(text=resolved.batch_convert)
+
+
 @dataclass
 class PreviewTabWidgets:
     frame: ttk.LabelFrame

@@ -173,35 +173,40 @@ def epub_to_pdf_python(
                 pdf_canvas.showPage()
                 y_position = height - 50
 
-            try:
-                safe_line = line.replace("\x00", "").replace("\r", "").strip()
-                if not safe_line:
-                    y_position -= line_height
-                    continue
-
-                if len(safe_line) > 80:
-                    words = safe_line.split()
-                    current_line = ""
-                    for word in words:
-                        if len(current_line + " " + word) > 80:
-                            if current_line:
-                                pdf_canvas.drawString(margin, y_position, current_line)
-                                y_position -= line_height
-                                if y_position < margin:
-                                    pdf_canvas.showPage()
-                                    y_position = height - 50
-                            current_line = word
-                        else:
-                            current_line += (" " + word) if current_line else word
-                    if current_line:
-                        pdf_canvas.drawString(margin, y_position, current_line)
-                        y_position -= line_height
-                else:
-                    pdf_canvas.drawString(margin, y_position, safe_line)
-                    y_position -= line_height
-            except Exception:
+            safe_line = line.replace("\x00", "").replace("\r", "").strip()
+            if not safe_line:
                 y_position -= line_height
                 continue
+
+            if len(safe_line) > 80:
+                words = safe_line.split()
+                current_line = ""
+                for word in words:
+                    if len(current_line + " " + word) > 80:
+                        if current_line:
+                            try:
+                                pdf_canvas.drawString(margin, y_position, current_line)
+                            except Exception as draw_err:
+                                print(f"[EPUB 转换警告] 绘制文本失败，已跳过：{draw_err}")
+                            y_position -= line_height
+                            if y_position < margin:
+                                pdf_canvas.showPage()
+                                y_position = height - 50
+                        current_line = word
+                    else:
+                        current_line += (" " + word) if current_line else word
+                if current_line:
+                    try:
+                        pdf_canvas.drawString(margin, y_position, current_line)
+                    except Exception as draw_err:
+                        print(f"[EPUB 转换警告] 绘制文本失败，已跳过：{draw_err}")
+                    y_position -= line_height
+            else:
+                try:
+                    pdf_canvas.drawString(margin, y_position, safe_line)
+                except Exception as draw_err:
+                    print(f"[EPUB 转换警告] 绘制文本失败，已跳过：{draw_err}")
+                y_position -= line_height
 
     ctx.report_progress(90, "正在保存 PDF 文件...")
     pdf_canvas.save()
@@ -264,8 +269,10 @@ def do_epub_convert_with_progress(
                 args,
                 stdout=subprocess.PIPE,
                 stderr=subprocess.STDOUT,
-                text=False,
+                text=True,
                 bufsize=1,
+                encoding="utf-8",
+                errors="replace",
             )
         except Exception as exc:
             ctx.report_error(f"启动 Calibre 转换失败：{str(exc)}")
@@ -277,16 +284,9 @@ def do_epub_convert_with_progress(
             if proc.poll() is not None:
                 break
 
-            line_bytes = proc.stdout.readline() if proc.stdout else b""
-            if not line_bytes:
+            line = proc.stdout.readline() if proc.stdout else ""
+            if not line:
                 continue
-
-            try:
-                line = line_bytes.decode("utf-8")
-            except UnicodeDecodeError:
-                line = line_bytes.decode("gbk", errors="ignore")
-            except Exception:
-                line = str(line_bytes, errors="ignore")
 
             match = re.search(r"(\d{1,3})%", line)
             if match:
@@ -343,6 +343,7 @@ def batch_epub_to_pdf(
     failed_count = 0
     failed_files: list[tuple[str, str]] = []
     success_files: list[str] = []
+    cancelled_early = False
 
     try:
         for index, epub_path in enumerate(epub_files):
@@ -384,8 +385,11 @@ def batch_epub_to_pdf(
                     success_count += 1
                     success_files.append(pdf_path)
                 elif result == "cancelled":
-                    ctx.report_done("操作已取消", None)
-                    return
+                    cancelled_early = True
+                    failed_count += 1
+                    failed_files.append((epub_path, "用户取消"))
+                    ctx.report_progress(100, "转换已取消")
+                    break
                 else:
                     failed_count += 1
                     failed_files.append((epub_path, file_error or "转换失败"))
@@ -396,7 +400,10 @@ def batch_epub_to_pdf(
                 sub_ctx.report_progress(100, f"转换失败：{str(exc)}")
                 continue
 
-        result_message = f"批量转换完成！\n成功：{success_count} 个文件\n失败：{failed_count} 个文件\n\n"
+        if cancelled_early:
+            result_message = f"转换已取消！\n成功：{success_count} 个文件\n失败：{failed_count} 个文件（含取消）\n\n"
+        else:
+            result_message = f"批量转换完成！\n成功：{success_count} 个文件\n失败：{failed_count} 个文件\n\n"
 
         if success_files:
             result_message += "成功转换的文件：\n"

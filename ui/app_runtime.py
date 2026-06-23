@@ -32,6 +32,12 @@ def apply_theme(config: ThemeConfig, dark: bool):
     config.style.configure("TButton", background=palette["subbg"], foreground=palette["fg"])
     config.style.configure("TCombobox", fieldbackground=palette["subbg"], foreground=palette["fg"])
     config.style.configure("TMenubutton", background=palette["subbg"], foreground=palette["fg"])
+    config.style.configure("TNotebook", background=palette["bg"])
+    config.style.map(
+        "TNotebook.Tab",
+        background=[("active", palette["subbg"]), ("!active", palette["border"])],
+        foreground=[("active", palette["accent"]), ("!active", palette["fg"])],
+    )
     config.style.configure("Horizontal.TProgressbar", background=palette["accent"])
     config.style.configure("TSeparator", background=palette["border"])
     if config.status_bar is not None:
@@ -64,7 +70,7 @@ def save_ui_settings(
         template=name_template_var.get() if name_template_var is not None else "{name}_{start}-{end}.pdf",
         epub_input=epub_input_entry.get().strip() if epub_input_entry is not None else "",
         epub_output=epub_output_entry.get().strip() if epub_output_entry is not None else "",
-        epub_paper=epub_paper_var.get().strip() if epub_paper_var is not None else "a4",
+        epub_paper=(epub_paper_var.get().strip() or "a4") if epub_paper_var is not None else "a4",
     )
     save_app_settings(settings_path, settings)
 

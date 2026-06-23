@@ -17,9 +17,11 @@ from ui.merge_tab import build_merge_tab
 from ui.epub_panel import build_epub_panels
 from ui.split_tab import build_split_tab
 from ui.auxiliary_ui import (
+    EPUBPanelTexts,
     PreviewTabTexts,
     SettingsTabTexts,
     ToolbarTexts,
+    apply_epub_panel_texts,
     apply_preview_tab_texts,
     apply_settings_tab_texts,
     apply_toolbar_texts,
@@ -109,6 +111,21 @@ STRINGS = {
         "template": "命名模板",
         "template_placeholder": "{name}_{start}-{end}.pdf",
         "recent": "最近",
+        "epub_frame": "EPUB 转 PDF",
+        "epub_input_label": "输入 EPUB 文件",
+        "epub_output_label": "输出 PDF 文件",
+        "epub_paper_label": "纸张大小",
+        "epub_convert": "开始转换",
+        "epub_batch_frame": "批量 EPUB 转 PDF",
+        "epub_batch_hint": "批量添加 .epub 文件后，将统一输出到所选目录；文件名模板支持 {name}.pdf。",
+        "epub_batch_add": "添加 EPUB",
+        "epub_batch_remove": "移除选中",
+        "epub_batch_clear": "清空列表",
+        "epub_batch_paper_label": "批量纸张大小",
+        "epub_batch_output_label": "批量输出目录",
+        "epub_batch_template_label": "输出文件名模板",
+        "epub_batch_convert": "开始批量转换",
+        "epub_browse": "浏览...",
     },
     "en": {
         "title": "PDF Toolbox: Split / Merge / Preview",
@@ -139,6 +156,21 @@ STRINGS = {
         "template": "Name template",
         "template_placeholder": "{name}_{start}-{end}.pdf",
         "recent": "Recent",
+        "epub_frame": "EPUB to PDF",
+        "epub_input_label": "Input EPUB",
+        "epub_output_label": "Output PDF",
+        "epub_paper_label": "Paper size",
+        "epub_convert": "Convert",
+        "epub_batch_frame": "Batch EPUB to PDF",
+        "epub_batch_hint": "Add .epub files below; output to selected directory. Filename template supports {name}.pdf.",
+        "epub_batch_add": "Add EPUB",
+        "epub_batch_remove": "Remove selected",
+        "epub_batch_clear": "Clear list",
+        "epub_batch_paper_label": "Batch paper size",
+        "epub_batch_output_label": "Output directory",
+        "epub_batch_template_label": "Filename template",
+        "epub_batch_convert": "Batch Convert",
+        "epub_browse": "Browse...",
     },
 }
 
@@ -428,7 +460,7 @@ def open_merge_manager():
     except Exception:
         pass
 
-# ?????????
+
 if DND_AVAILABLE:
     root = TkinterDnD.Tk()
 else:
@@ -486,10 +518,13 @@ style.map(
 )
 
 root.configure(bg="#f0f0f0")
-container = ttk.Frame(root, padding=12)
-container.grid(row=0, column=0, sticky="nsew")
 root.columnconfigure(0, weight=1)
 root.rowconfigure(0, weight=1)
+
+container = ttk.Frame(root, padding=12)
+container.grid(row=0, column=0, sticky="nsew")
+container.columnconfigure(0, weight=1)
+container.rowconfigure(0, weight=1)
 
 notebook = ttk.Notebook(container)
 notebook.grid(row=0, column=0, sticky="nsew")
@@ -500,6 +535,10 @@ split_tab = ttk.Frame(notebook)
 merge_tab = ttk.Frame(notebook)
 preview_tab = ttk.Frame(notebook)
 settings_tab = ttk.Frame(notebook)
+epub_tab = ttk.Frame(notebook)
+epub_tab.columnconfigure(0, weight=1)
+epub_tab.rowconfigure(0, weight=1)
+notebook.add(epub_tab, text="EPUB 转 PDF")
 
 recent_files = []
 
@@ -619,6 +658,42 @@ def get_toolbar_texts() -> ToolbarTexts:
     )
 
 
+def get_epub_panel_texts() -> EPUBPanelTexts:
+    if LANG == "en":
+        return EPUBPanelTexts(
+            frame_title="EPUB to PDF",
+            input_label="Input EPUB",
+            output_label="Output PDF",
+            paper_label="Paper size",
+            convert_button="Convert",
+            batch_frame_title="Batch EPUB to PDF",
+            batch_hint="Add .epub files below; output to selected directory. Filename template supports {name}.pdf.",
+            batch_add="Add EPUB",
+            batch_remove="Remove selected",
+            batch_clear="Clear list",
+            batch_paper_label="Batch paper size",
+            batch_output_label="Output directory",
+            batch_template_label="Filename template",
+            batch_convert="Batch Convert",
+        )
+    return EPUBPanelTexts(
+        frame_title="EPUB 转 PDF",
+        input_label="输入 EPUB 文件",
+        output_label="输出 PDF 文件",
+        paper_label="纸张大小",
+        convert_button="开始转换",
+        batch_frame_title="批量 EPUB 转 PDF",
+        batch_hint="批量添加 .epub 文件后，将统一输出到所选目录；文件名模板支持 {name}.pdf。",
+        batch_add="添加 EPUB",
+        batch_remove="移除选中",
+        batch_clear="清空列表",
+        batch_paper_label="批量纸张大小",
+        batch_output_label="批量输出目录",
+        batch_template_label="输出文件名模板",
+        batch_convert="开始批量转换",
+    )
+
+
 def refresh_notebook_titles():
     if 'notebook' not in globals():
         return
@@ -631,6 +706,8 @@ def refresh_notebook_titles():
             notebook.tab(preview_tab, text='PDF Preview' if LANG == 'en' else 'PDF 预览')
         if 'settings_tab' in globals():
             notebook.tab(settings_tab, text='Settings' if LANG == 'en' else '设置')
+        if 'epub_tab' in globals():
+            notebook.tab(epub_tab, text='EPUB to PDF' if LANG == 'en' else 'EPUB 转 PDF')
     except Exception:
         pass
 
@@ -668,6 +745,11 @@ def refresh_auxiliary_texts():
             )
     except Exception:
         pass
+    try:
+        if 'epub_widgets' in globals():
+            apply_epub_panel_texts(epub_widgets, get_epub_panel_texts())
+    except Exception:
+        pass
     refresh_notebook_titles()
     refresh_ranges_placeholder()
 
@@ -680,8 +762,9 @@ def set_language(lang: str):
         LANG,
         root,
         recent_btn,
-        _save_settings_if_ready,
+        None,
     )
+    _save_settings_if_ready()
     update_recent_menu()
     refresh_auxiliary_texts()
 
@@ -1185,7 +1268,7 @@ def run_batch_epub_convert():
     threading.Thread(target=task, daemon=True).start()
 
 
-epub_widgets = build_epub_panels(container)
+epub_widgets = build_epub_panels(epub_tab)
 epub_frame = epub_widgets.epub_frame
 epub_input_entry = epub_widgets.input_entry
 epub_browse_btn = epub_widgets.browse_btn

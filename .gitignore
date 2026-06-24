@@ -12,6 +12,23 @@ dist
 dist-ssr
 *.localwenjian
 
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+*.pyc
+.pytest_cache/
+.coverage
+htmlcov/
+.venv/
+venv/
+ENV/
+env/
 
 # Editor directories and files
 .vscode/*

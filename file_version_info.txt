@@ -1,0 +1,32 @@
+VSVersionInfo(
+  ffi=FixedFileInfo(
+    filevers=(1, 0, 0, 0),
+    prodvers=(1, 0, 0, 0),
+    mask=0x3f,
+    flags=0x0,
+    OS=0x40004,
+    fileType=0x1,
+    subtype=0x0,
+    date=(0, 0)
+  ),
+  kids=[
+    StringFileInfo(
+      [
+        StringTable(
+          u'080404b0',  # 中文
+          [
+            StringStruct(u'CompanyName', u'PDF Tools'),
+            StringStruct(u'FileDescription', u'PDF 工具箱 - 拆分/合并/预览'),
+            StringStruct(u'FileVersion', u'1.0.0.0'),
+            StringStruct(u'InternalName', u'pdf-split-tool'),
+            StringStruct(u'OriginalFilename', u'split_pdf_gui.exe'),
+            StringStruct(u'ProductName', u'PDF 工具箱'),
+            StringStruct(u'ProductVersion', u'1.0.0.0'),
+            StringStruct(u'LegalCopyright', u'Copyright (c) 2026'),
+          ]
+        )
+      ]
+    ),
+    VarFileInfo([VarStruct(u'Translation', [2052, 1200])])
+  ]
+)

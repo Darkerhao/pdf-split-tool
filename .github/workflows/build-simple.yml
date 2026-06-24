@@ -1,0 +1,146 @@
+name: Build Executables
+
+on:
+  push:
+    tags:
+      - 'v*'
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  build-windows:
+    name: Build Windows
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install PyPDF2>=3.0 pyinstaller>=6.0
+
+      - name: Build executable
+        run: |
+          pyinstaller --noconsole --onefile --name pdf-toolbox-windows split_pdf_gui.py
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: pdf-toolbox-windows
+          path: dist/pdf-toolbox-windows.exe
+
+  build-macos:
+    name: Build macOS
+    runs-on: macos-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install PyPDF2>=3.0 pyinstaller>=6.0
+
+      - name: Build executable
+        run: |
+          pyinstaller --noconsole --onefile --name pdf-toolbox-macos split_pdf_gui.py
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: pdf-toolbox-macos
+          path: dist/pdf-toolbox-macos
+
+  build-linux:
+    name: Build Linux
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y python3-tk
+          python -m pip install --upgrade pip
+          pip install PyPDF2>=3.0 pyinstaller>=6.0
+
+      - name: Build executable
+        run: |
+          pyinstaller --noconsole --onefile --name pdf-toolbox-linux split_pdf_gui.py
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: pdf-toolbox-linux
+          path: dist/pdf-toolbox-linux
+
+  create-release:
+    name: Create Release
+    needs: [build-windows, build-macos, build-linux]
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/')
+
+    steps:
+      - name: Download Windows artifact
+        uses: actions/download-artifact@v3
+        with:
+          name: pdf-toolbox-windows
+          path: ./artifacts/windows
+
+      - name: Download macOS artifact
+        uses: actions/download-artifact@v3
+        with:
+          name: pdf-toolbox-macos
+          path: ./artifacts/macos
+
+      - name: Download Linux artifact
+        uses: actions/download-artifact@v3
+        with:
+          name: pdf-toolbox-linux
+          path: ./artifacts/linux
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            ./artifacts/windows/pdf-toolbox-windows.exe
+            ./artifacts/macos/pdf-toolbox-macos
+            ./artifacts/linux/pdf-toolbox-linux
+          draft: false
+          prerelease: false
+          body: |
+            ## PDF 工具箱 - 跨平台发布
+
+            ### 下载
+            - **Windows:** pdf-toolbox-windows.exe
+            - **macOS:** pdf-toolbox-macos
+            - **Linux:** pdf-toolbox-linux
+
+            ### 功能
+            - PDF 拆分（按范围、按章节、单页）
+            - PDF 合并
+            - EPUB 转 PDF
+            - 多语言支持（中文/英文）
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

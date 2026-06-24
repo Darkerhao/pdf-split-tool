@@ -1,0 +1,130 @@
+name: Build Installers
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+jobs:
+  build-windows-installer:
+    name: Build Windows Installer
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pyinstaller
+
+      - name: Build executable
+        run: |
+          pyinstaller split_pdf_gui.spec
+
+      - name: Install NSIS
+        run: |
+          choco install nsis -y
+
+      - name: Create installer
+        run: |
+          makensis installer.nsi
+
+      - name: Upload installer
+        uses: actions/upload-artifact@v3
+        with:
+          name: pdf-toolbox-windows-installer
+          path: PDF_Toolbox_Setup.exe
+
+  build-macos-dmg:
+    name: Build macOS DMG
+    runs-on: macos-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pyinstaller
+
+      - name: Build app bundle
+        run: |
+          pyinstaller --windowed --onefile --name "PDF Toolbox" \
+            --icon=icon.icns \
+            --add-data "presentation/i18n/locales:presentation/i18n/locales" \
+            split_pdf_gui.py
+
+      - name: Create DMG
+        run: |
+          brew install create-dmg
+          create-dmg \
+            --volname "PDF Toolbox" \
+            --window-pos 200 120 \
+            --window-size 600 400 \
+            --icon-size 100 \
+            --app-drop-link 450 185 \
+            "PDF-Toolbox.dmg" \
+            "dist/PDF Toolbox.app"
+
+      - name: Upload DMG
+        uses: actions/upload-artifact@v3
+        with:
+          name: pdf-toolbox-macos-dmg
+          path: PDF-Toolbox.dmg
+
+  build-linux-appimage:
+    name: Build Linux AppImage
+    runs-on: ubuntu-20.04
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y python3-tk
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pyinstaller
+
+      - name: Build executable
+        run: |
+          pyinstaller --onefile --name pdf-toolbox \
+            --add-data "presentation/i18n/locales:presentation/i18n/locales" \
+            split_pdf_gui.py
+
+      - name: Create AppImage
+        run: |
+          wget https://github.com/linuxdeploy/linuxdeploy/releases/download/continuous/linuxdeploy-x86_64.AppImage
+          chmod +x linuxdeploy-x86_64.AppImage
+          mkdir -p AppDir/usr/bin
+          cp dist/pdf-toolbox AppDir/usr/bin/
+          ./linuxdeploy-x86_64.AppImage --appdir AppDir --output appimage
+
+      - name: Upload AppImage
+        uses: actions/upload-artifact@v3
+        with:
+          name: pdf-toolbox-linux-appimage
+          path: PDF_Toolbox-*.AppImage

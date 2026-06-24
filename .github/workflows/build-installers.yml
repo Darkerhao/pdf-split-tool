@@ -28,7 +28,7 @@ jobs:
 
       - name: Build executable
         run: |
-          pyinstaller split_pdf_gui.spec
+          pyinstaller --noconsole --onefile --name split_pdf_gui split_pdf_gui.py
 
       - name: Install NSIS
         run: |
@@ -66,7 +66,6 @@ jobs:
       - name: Build app bundle
         run: |
           pyinstaller --windowed --onefile --name "PDF Toolbox" \
-            --icon=icon.icns \
             --add-data "presentation/i18n/locales:presentation/i18n/locales" \
             split_pdf_gui.py
 

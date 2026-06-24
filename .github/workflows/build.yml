@@ -42,10 +42,8 @@ jobs:
         if: matrix.os == 'windows-latest'
         run: |
           pyinstaller --noconsole --onefile --name split_pdf_gui `
-            --icon=icon.ico `
             --add-data "presentation/i18n/locales;presentation/i18n/locales" `
             --hidden-import=tkinter `
-            --hidden-import=tkinterdnd2 `
             split_pdf_gui.py
 
       - name: Build with PyInstaller (Unix)
@@ -54,7 +52,6 @@ jobs:
           pyinstaller --noconsole --onefile --name split_pdf_gui \
             --add-data "presentation/i18n/locales:presentation/i18n/locales" \
             --hidden-import=tkinter \
-            --hidden-import=tkinterdnd2 \
             split_pdf_gui.py
 
       - name: Upload artifact
